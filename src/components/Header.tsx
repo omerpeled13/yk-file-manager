@@ -69,15 +69,18 @@ export default function Header() {
                     <h1 className="text-sm text-secondary-foreground">מערכת לניהול דו"חות</h1>
                 </Link>
                 <div className="flex items-center gap-4">
-                    {session && userName && (
-                        <span className="text-sm text-muted-foreground">
-                            היי {userName}
-                        </span>
-                    )}
+
                     <ModeToggle />
                     <DropdownMenu>
+
                         <DropdownMenuTrigger asChild>
+
                             <Button variant="link" className="h-8 px-0">
+                                {session && userName && (
+                                    <span className="text-sm text-muted-foreground">
+                                        היי {userName}
+                                    </span>
+                                )}
                                 <Avatar className="h-9 w-9 mx-1">
                                     <AvatarImage src="/placeholder-user.jpg" alt={userEmail} />
                                     <AvatarFallback>{userName?.charAt(0)}</AvatarFallback>

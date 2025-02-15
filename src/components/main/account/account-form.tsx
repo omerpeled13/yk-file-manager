@@ -13,7 +13,6 @@ export default function AccountForm() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState<string | null>(null)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -41,7 +40,7 @@ export default function AccountForm() {
       if (!user) return
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`name, image_url`)
+        .select(`name`)
         .eq("id", user?.id)
         .single()
 
@@ -52,7 +51,6 @@ export default function AccountForm() {
 
       if (data) {
         setName(data.name)
-        setImageUrl(data.image_url)
       }
     } catch (error) {
       alert("אירעה שגיאה בטעינת נתוני המשתמש")
@@ -70,7 +68,7 @@ export default function AccountForm() {
     router.refresh()
   }
 
-  async function updateProfile(name: string | null, image_url: string | null) {
+  async function updateProfile(name: string | null) {
     try {
       setLoading(true)
 
@@ -78,7 +76,6 @@ export default function AccountForm() {
         .from("profiles")
         .update({
           name: name,
-          image_url: image_url,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user?.id)
@@ -109,7 +106,7 @@ export default function AccountForm() {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
-        <Button className="w-full" onClick={() => updateProfile(name, imageUrl)} disabled={loading}>
+        <Button className="w-full" onClick={() => updateProfile(name)} disabled={loading}>
           {loading ? "טוען..." : "עדכן"}
         </Button>
         <Button variant="outline" className="w-full" onClick={handleSignOut}>

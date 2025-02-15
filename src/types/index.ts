@@ -13,5 +13,4 @@ export interface File {
   export interface Profile {
     id: string
     name: string | null
-    image_url: string | null
   }

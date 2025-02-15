@@ -19,7 +19,7 @@ export function Main() {
   }, [checkAdminStatus])
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container py-6 max-w-6xl mx-auto px-4 h-full ">
       <Tabs defaultValue="files" dir="rtl">
         {isAdminUser && <TabsList>
           <TabsTrigger value="files">דו"חות</TabsTrigger>

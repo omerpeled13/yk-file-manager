@@ -39,7 +39,9 @@ const LoginForm = () => {
     <section className="bg-blue-gray-50">
       <div className="w-[30rem] flex flex-col items-center justify-center px-6 py-8 mx-auto">
         <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl mb-6">
-          Sign In
+          YK - Intelligence
+          <br/>
+          מערכת הדו"חות
         </h1>
         
         {error && (
@@ -71,7 +73,7 @@ const LoginForm = () => {
             className="w-full"
             onClick={handleSignIn}
           >
-            Sign In
+            התחבר
           </Button>
         </div>
       </div>

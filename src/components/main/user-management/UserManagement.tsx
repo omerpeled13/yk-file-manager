@@ -9,12 +9,14 @@ import { Loader2 } from "lucide-react"
 import supabase from "@/src/supabase/supabase-client"
 import { isAdmin } from "@/src/supabase/auth-helper"
 import { Database } from "@/src/types/supabase"
+import { Label } from "@radix-ui/react-dropdown-menu"
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
 export function UserManagement() {
     const [users, setUsers] = useState<Profile[]>([])
     const [newUserEmail, setNewUserEmail] = useState("")
+    const [newUserName, setNewUserName] = useState("")
     const [invitingUser, setInvitingUser] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -98,7 +100,7 @@ export function UserManagement() {
     const handleDeleteUser = async (userId: string) => {
         try {
             setError(null)
-            
+
             const response = await fetch(`/api/users/${userId}`, {
                 method: 'DELETE',
             })
@@ -120,24 +122,44 @@ export function UserManagement() {
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-4">
-                <Input
-                    type="email"
-                    placeholder="אימייל משתמש חדש"
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
-                    disabled={invitingUser}
-                />
-                <Button onClick={handleInviteUser} disabled={invitingUser || !newUserEmail}>
-                    {invitingUser ? (
-                        <>
-                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                            שולח...
-                        </>
-                    ) : (
-                        'הזמן משתמש'
-                    )}
-                </Button>
+            <div className="flex justify-center gap-8 items-center border px-10 py-2 rounded-md bg-muted">
+                <div>
+                    <Label className="justify-self-start">
+                        הוספת משתמש חדש
+                    </Label>
+                </div>
+                <div>
+                    <Input
+                        type="email"
+                        placeholder="אימייל"
+                        value={newUserEmail}
+                        onChange={(e) => setNewUserEmail(e.target.value)}
+                        disabled={invitingUser}
+                    />
+                </div>
+                <div>
+                    <Input
+                        type="text"
+                        placeholder="שם"
+                        value={newUserName}
+                        onChange={(e) => setNewUserName(e.target.value)}
+                        disabled={invitingUser}
+                    />
+
+                </div>
+                <div>
+
+                    <Button onClick={handleInviteUser} disabled={invitingUser || !newUserEmail}>
+                        {invitingUser ? (
+                            <>
+                                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                                שולח...
+                            </>
+                        ) : (
+                            'הזמן משתמש'
+                        )}
+                    </Button>
+                </div>
             </div>
 
             {error && (
@@ -159,10 +181,10 @@ export function UserManagement() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>אימייל</TableHead>
-                                    <TableHead>תפקיד</TableHead>
-                                    <TableHead>נוצר</TableHead>
-                                    <TableHead>פעולות</TableHead>
+                                    <TableHead className="text-right">אימייל</TableHead>
+                                    <TableHead className="text-right">תפקיד</TableHead>
+                                    <TableHead className="text-right">נוצר</TableHead>
+                                    <TableHead className="text-right">פעולות</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

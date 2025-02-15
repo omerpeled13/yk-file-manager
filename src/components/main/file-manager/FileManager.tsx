@@ -5,10 +5,32 @@ import { Button } from "@/src/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/table"
 import supabase from "@/src/supabase/supabase-client"
-import { FileIcon, DownloadIcon, Loader2 } from "lucide-react"
+import { FileIcon, DownloadIcon, Loader2, Eye, Download, Trash2, Pencil, MoreHorizontal } from "lucide-react"
 import { isAdmin, getUser } from "@/src/supabase/auth-helper"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/src/components/ui/dialog"
+import { Input } from "@/src/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/src/components/ui/dropdown-menu"
 
-interface File {
+interface FileRecord {
   id: string
   name: string
   file_url: string
@@ -17,14 +39,26 @@ interface File {
   file_type: string
   file_size: number
   uploaded_by: string
+  profiles: { name: string }
+}
+
+interface User {
+  id: string
+  name: string
+  email: string
 }
 
 export function FileManager() {
-  const [files, setFiles] = useState<File[]>([])
+  const [files, setFiles] = useState<FileRecord[]>([])
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [uploadLoading, setUploadLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [users, setUsers] = useState<User[]>([])
+  const [selectedUserId, setSelectedUserId] = useState<string>("")
+  const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [displayName, setDisplayName] = useState<string>("")
 
   const fetchFiles = useCallback(async () => {
     try {
@@ -34,18 +68,23 @@ export function FileManager() {
       const user = await getUser()
       if (!user) return
 
-      let query = supabase.from('files').select('*')
-
+      let query = supabase.from('files').select(`
+        *,
+        profiles:user_id (
+          name
+        )
+      `)
       if (!isAdminUser) {
         query = query.eq('user_id', user.id)
       }
 
       const { data, error } = await query.order('created_at', { ascending: false })
+      console.log(data)
 
       if (error) throw error
       setFiles(data || [])
     } catch (err) {
-      setError('שגיאה בטעינת דו"ות')
+      setError('שגיאה בטעינת דוח"ות')
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -57,17 +96,42 @@ export function FileManager() {
     setIsAdminUser(adminStatus)
   }, [])
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, email')
+        .order('name', { ascending: true })
+
+      if (error) throw error
+      setUsers(data || [])
+    } catch (err) {
+      console.error('Error fetching users:', err)
+    }
+  }, [])
+
   useEffect(() => {
     const init = async () => {
       await checkAdminStatus()
       await fetchFiles()
+      if (isAdminUser) {
+        await fetchUsers()
+      }
     }
     init()
-  }, [checkAdminStatus, fetchFiles])
+  }, [checkAdminStatus, fetchFiles, fetchUsers, isAdminUser])
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+
+    setSelectedFile(file)
+    setDisplayName(file.name)
+    setShowUploadDialog(true)
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile || !selectedUserId || !displayName) return
 
     try {
       setUploadLoading(true)
@@ -78,13 +142,14 @@ export function FileManager() {
 
       // Create a unique file name
       const timestamp = Date.now()
-      const fileExt = file.name.split('.').pop()
+      const fileExt = selectedFile.name.split('.').pop()
       const fileName = `${timestamp}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `${selectedUserId}/${fileName}`
 
       // Upload file to Supabase Storage
       const { data: storageData, error: storageError } = await supabase.storage
         .from('files')
-        .upload(`public/${fileName}`, file, {
+        .upload(filePath, selectedFile, {
           cacheControl: '3600',
           upsert: false
         })
@@ -94,20 +159,26 @@ export function FileManager() {
       // Get the public URL for the file
       const { data: { publicUrl } } = supabase.storage
         .from('files')
-        .getPublicUrl(`public/${fileName}`)
+        .getPublicUrl(filePath)
 
       // Insert file record into the database
       const { error: dbError } = await supabase.from('files').insert({
-        name: file.name,
-        file_url: `public/${fileName}`,
-        file_type: file.type,
-        file_size: file.size,
+        name: displayName,
+        file_url: filePath,
+        file_type: selectedFile.type,
+        file_size: selectedFile.size,
         uploaded_by: user.id,
-        user_id: user.id,
-        description: ''
+        user_id: selectedUserId,
+        description: '',
       })
 
       if (dbError) throw dbError
+
+      // Reset states
+      setSelectedFile(null)
+      setSelectedUserId("")
+      setDisplayName("")
+      setShowUploadDialog(false)
 
       // Refresh the file list
       await fetchFiles()
@@ -144,6 +215,46 @@ export function FileManager() {
     }
   }
 
+  const handleDelete = async (fileId: string, fileUrl: string) => {
+    if (!confirm('האם אתה בטוח שברצונך למחוק דו"ח זה?')) return
+
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('files')
+        .remove([fileUrl])
+
+      if (storageError) throw storageError
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', fileId)
+
+      if (dbError) throw dbError
+
+      await fetchFiles()
+    } catch (err) {
+      setError('שגיאה במחיקת הדו"ח')
+      console.error(err)
+    }
+  }
+
+  const handleView = async (fileUrl: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('files')
+        .createSignedUrl(fileUrl, 20)
+
+      if (error || !data) throw error
+
+      window.open(data.signedUrl, '_blank')
+    } catch (err) {
+      setError('שגיאה בפתיחת הדו"ח')
+      console.error(err)
+    }
+  }
   return (
     <div className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
       {error && (
@@ -171,11 +282,63 @@ export function FileManager() {
             type="file"
             id="file-upload"
             className="hidden"
-            onChange={handleFileUpload}
+            onChange={handleFileSelect}
             disabled={uploadLoading}
           />
         </div>
       )}
+
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>פרטי הדו"ח</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">שם</label>
+              <Input
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder='שם הדו"ח'
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">משתמש</label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר משתמש" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowUploadDialog(false)
+                setSelectedFile(null)
+                setSelectedUserId("")
+                setDisplayName("")
+              }}
+            >
+              ביטול
+            </Button>
+            <Button
+              onClick={handleUpload}
+              disabled={!selectedUserId || !displayName || uploadLoading}
+            >
+              {uploadLoading ? 'מעלה...' : 'העלה'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>
@@ -187,14 +350,15 @@ export function FileManager() {
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : (
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead>שם</TableHead>
-                  <TableHead>סוג</TableHead>
-                  <TableHead>גודל</TableHead>
-                  <TableHead>הועלה</TableHead>
-                  <TableHead>פעולות</TableHead>
+                  <TableHead className="text-right">דו"ח</TableHead>
+                  <TableHead className="text-right">שייך למשתמש</TableHead>
+                  <TableHead className="text-right">סוג</TableHead>
+                  <TableHead className="text-right">גודל</TableHead>
+                  <TableHead className="text-right">הועלה</TableHead>
+                  <TableHead className="text-right">פעולות</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -206,17 +370,54 @@ export function FileManager() {
                         {file.name}
                       </div>
                     </TableCell>
+                    <TableCell>{file.profiles.name}</TableCell>
                     <TableCell>{file.file_type}</TableCell>
                     <TableCell>{(file.file_size / 1024 / 1024).toFixed(2)} MB</TableCell>
                     <TableCell>{new Date(file.created_at).toLocaleDateString('he-IL')}</TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(file.file_url, file.name)}
-                      >
-                        <DownloadIcon className="h-4 w-4" />
-                      </Button>
+                      {isAdminUser ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleView(file.file_url)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              <span>צפה</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownload(file.file_url, file.name)}>
+                              <Download className="mr-2 h-4 w-4" />
+                              <span>הורד</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedFile(null) // TODO: Implement edit functionality
+                              }}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              <span>ערוך</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(file.id, file.file_url)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>מחק</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleView(file.file_url)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
