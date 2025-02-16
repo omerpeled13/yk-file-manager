@@ -1,51 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Button } from "@/src/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/src/components/ui/dropdown-menu"
 import { Avatar, AvatarImage, AvatarFallback } from "@/src/components/ui/avatar"
-import supabase from "@/src/lib/supabaseClientComponentClient";
-import { Session } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { ModeToggle } from "./ui/theme-provider"
 import Link from 'next/link'
 import { ChevronDownIcon, LogOutIcon } from "@/src/components/ui/icons"
-import { getUserProfile, logout } from "@/src/lib/auth-helper"
+import { logout } from "@/src/lib/auth-helper"
+import { useAuth } from "../hooks/useAuth"
 
 
 export default function Header() {
-    const [session, setSession] = useState<Session | null>(null)
-    const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
-    const [userName, setUserName] = useState<string | undefined>(undefined)
     const router = useRouter()
 
-    const fetchUserProfile = async (userId: string) => {
-        try {
-            const profile = await getUserProfile()
-            setUserEmail(profile?.email)
-            setUserName(profile?.name)
-        } catch (error) {
-            console.error('Error fetching user profile:', error)
-        }
-    }
-
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session)
-            if (session?.user) {
-                fetchUserProfile(session.user.id)
-            }
-        })
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session)
-            if (session?.user) {
-                fetchUserProfile(session.user.id)
-            }
-        })
-
-        return () => subscription.unsubscribe()
-    }, [])
+    const { user, loading: user_loading } = useAuth();
 
     const handleSignOut = async () => {
         await logout()
@@ -67,14 +36,14 @@ export default function Header() {
                         <DropdownMenuTrigger asChild>
 
                             <Button variant="link" className="h-8 px-0">
-                                {session && userName && (
+                                {user?.name && (
                                     <span className="text-sm text-muted-foreground">
-                                        היי {userName}
+                                        היי {user?.name}
                                     </span>
                                 )}
                                 <Avatar className="h-9 w-9 mx-1">
-                                    <AvatarImage src="/placeholder-user.jpg" alt={userEmail} />
-                                    <AvatarFallback>{userName?.charAt(0)}</AvatarFallback>
+                                    <AvatarImage src="/placeholder-user.jpg" alt={user?.email} />
+                                    <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <ChevronDownIcon className="w-4 h-4" />
                             </Button>
@@ -82,7 +51,7 @@ export default function Header() {
                         <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem>
                                 <Link href="/account" className="w-full">
-                                    <div className="text-sm text-muted-foreground">{userEmail}</div>
+                                    <div className="text-sm text-muted-foreground">{ user?.email}</div>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />

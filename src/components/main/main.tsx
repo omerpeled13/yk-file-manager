@@ -1,27 +1,17 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
-import { FileManager } from "./file-manager/FileManager"
-import { UserManagement } from "./user-management/UserManagement"
+import { FileManager } from "./FileManager"
+import { UserManagement } from "./UserManagement"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
-import { isAdmin } from "@/src/lib/auth-helper"
+import { useAuth } from "@/src/hooks/useAuth"
 
 export function Main() {
-  const [isAdminUser, setIsAdminUser] = useState(false)
-
-  const checkAdminStatus = useCallback(async () => {
-    const adminStatus = await isAdmin()
-    setIsAdminUser(adminStatus)
-  }, [])
-
-  useEffect(() => {
-    checkAdminStatus()
-  }, [checkAdminStatus])
+  const { user, loading: user_loading } = useAuth()
 
   return (
     <div className="container py-6 max-w-6xl mx-auto px-4 h-full ">
       <Tabs defaultValue="files" dir="rtl">
-        {isAdminUser && <TabsList>
+        {user?.isAdmin && <TabsList>
           <TabsTrigger value="files">דו"חות</TabsTrigger>
           <TabsTrigger value="users">משתמשים</TabsTrigger>
         </TabsList>
@@ -29,7 +19,7 @@ export function Main() {
         <TabsContent value="files">
           <FileManager />
         </TabsContent>
-        {isAdminUser && (
+        {user?.isAdmin && (
           <TabsContent value="users">
             <UserManagement />
           </TabsContent>

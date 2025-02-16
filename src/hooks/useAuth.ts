@@ -1,6 +1,6 @@
-"use client"
+
 import { useEffect, useState } from 'react';
-import supabase from '@/src/lib/supabaseClient';
+import supabase from '@/src/lib/supabaseClientComponentClient';
 
 export type UserProfile = {
   id: string;
@@ -29,7 +29,7 @@ export const useAuth = () => {
         // Fetch user details from the 'profiles' table
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('name, is_admin')
+          .select('name, role')
           .eq('id', user.id)
           .single();
 
@@ -41,7 +41,7 @@ export const useAuth = () => {
           id: user.id,
           email: user.email,
           name: profile?.name || 'Unknown',
-          isAdmin: profile?.is_admin || false,
+          isAdmin: profile?.role==="admin" || false,
         });
       }
 
