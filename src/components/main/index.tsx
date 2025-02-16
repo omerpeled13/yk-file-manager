@@ -12,7 +12,7 @@ function Main() {
     <div className="container py-6 max-w-6xl mx-auto px-4 h-full ">
       <Tabs defaultValue="files" dir="rtl">
         {user?.isAdmin && <TabsList>
-          <TabsTrigger value="files">דו"חות</TabsTrigger>
+          <TabsTrigger value="files">דו&quotחות</TabsTrigger>
           <TabsTrigger value="users">משתמשים</TabsTrigger>
         </TabsList>
         }

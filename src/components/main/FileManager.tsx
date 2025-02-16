@@ -273,7 +273,7 @@ export function FileManager() {
                 מעלה...
               </>
             ) : (
-              'העלאת דו"ח'
+              'העלאת דו&quotח'
             )}
           </Button>
           <input
@@ -289,7 +289,7 @@ export function FileManager() {
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>פרטי הדו"ח</DialogTitle>
+            <DialogTitle>פרטי הדו&quotח</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -340,7 +340,7 @@ export function FileManager() {
 
       <Card>
         <CardHeader>
-          <CardTitle>דו"חות</CardTitle>
+          <CardTitle>דו&quotחות</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -351,7 +351,7 @@ export function FileManager() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">דו"ח</TableHead>
+                  <TableHead className="text-right">דו&quotח</TableHead>
                   <TableHead className="text-right">שייך למשתמש</TableHead>
                   <TableHead className="text-right">סוג</TableHead>
                   <TableHead className="text-right">גודל</TableHead>
@@ -422,7 +422,7 @@ export function FileManager() {
                 {files.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      לא נמצאו דו"חות
+                      לא נמצאו דו&quotחות
                     </TableCell>
                   </TableRow>
                 )}
