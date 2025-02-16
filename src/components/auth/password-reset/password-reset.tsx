@@ -26,7 +26,6 @@ export const PasswordResetForm = () => {
     });
 
     if (error) {
-      console.log(error.message);
       alert(error.message);
     } else {
       alert("Password reset successfully");

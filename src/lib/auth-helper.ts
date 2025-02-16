@@ -1,4 +1,4 @@
-import supabase from './supabaseClient'
+import supabase from './supabaseClientComponentClient'
 import { Database } from '../types/supabase'
 
 type Profile = Database['public']['Tables']['profiles']['Row']

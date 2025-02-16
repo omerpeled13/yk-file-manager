@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/ca
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/table"
 import { Loader2 } from "lucide-react"
 import supabase from "@/src/lib/supabaseClientComponentClient"
-import { isAdmin } from "@/src/lib/auth-helper"
 import { Database } from "@/src/types/supabase"
 import { Label } from "@radix-ui/react-dropdown-menu"
 import { useAuth } from "@/src/hooks/useAuth"
@@ -15,7 +14,7 @@ import { useAuth } from "@/src/hooks/useAuth"
 type Profile = Database['public']['Tables']['profiles']['Row']
 
 export function UserManagement() {
-    const [users, setUsers] = useState<Profile[]>([])
+    const [profiles, setProfiles] = useState<Profile[]>([])
     const [newUserEmail, setNewUserEmail] = useState("")
     const [newUserName, setNewUserName] = useState("")
     const [invitingUser, setInvitingUser] = useState(false)
@@ -24,45 +23,19 @@ export function UserManagement() {
 
     const { user, loading: user_loading } = useAuth()
 
-    const fetchProfiles = useCallback(async () => {
-        try {
-            setLoadingProfiles(true)
-            setError(null)
 
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .order('created_at', { ascending: false })
+    useEffect(() => {//fetch profiles
+        const fetchProfiles = async () => {
+            setLoadingProfiles(true);
+            const res = await fetch("/api/profiles");
+            const data = await res.json();
+            if (!data.error) setProfiles(data.profiles);
+            else setError(data.error)
+            setLoadingProfiles(false);
+        };
 
-            console.log('Profiles fetch response:', { data, error }) // Debug log
-
-            if (error) {
-                console.error('Profiles fetch error:', error)
-                throw error
-            }
-
-            if (!data || data.length === 0) {
-                console.log('No profiles found or access denied')
-            }
-
-            setUsers(data || [])
-        } catch (err) {
-            setError('שגיאה בטעינת משתמשים')
-            console.error('Error fetching profiles:', err)
-        } finally {
-            setLoadingProfiles(false)
-        }
-    }, [])
-
-
-    useEffect(() => {
-        const init = async () => {
-                if (user?.isAdmin) {
-                    await fetchProfiles()
-                }
-        }
-        init()
-    }, [user])
+        fetchProfiles();
+    }, []);
 
     const handleInviteUser = async () => {
         try {
@@ -84,7 +57,7 @@ export function UserManagement() {
             }
 
             setNewUserEmail("")
-            fetchProfiles()
+            //TODO: refresh profiles
             alert('הזמנה נשלחה בהצלחה')
         } catch (err) {
             setError('שגיאה בשליחת ההזמנה')
@@ -106,7 +79,7 @@ export function UserManagement() {
                 throw new Error('Failed to delete user')
             }
 
-            fetchProfiles()
+            //TODO: refresh profiles
         } catch (err) {
             setError('Failed to delete user')
             console.error(err)
@@ -185,12 +158,12 @@ export function UserManagement() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {users.map((user) => (
-                                    <TableRow key={user.id}>
-                                        <TableCell>{user.email}</TableCell>
-                                        <TableCell>{user.role}</TableCell>
+                                {profiles.map((profile) => (
+                                    <TableRow key={profile.id}>
+                                        <TableCell>{profile.email}</TableCell>
+                                        <TableCell>{profile.role}</TableCell>
                                         <TableCell>
-                                            {new Date(user.created_at).toLocaleDateString('he-IL')}
+                                            {new Date(profile.created_at).toLocaleDateString('he-IL')}
                                         </TableCell>
                                         <TableCell>
                                             <Button

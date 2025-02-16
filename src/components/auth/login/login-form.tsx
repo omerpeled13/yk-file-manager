@@ -41,7 +41,7 @@ const LoginForm = () => {
         <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl mb-6">
           YK - Intelligence
           <br/>
-          מערכת הדו&quotחות
+          {'מערכת הדו"חות'}
         </h1>
         
         {error && (

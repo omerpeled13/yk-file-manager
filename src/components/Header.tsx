@@ -26,7 +26,7 @@ export default function Header() {
             <div className="max-w-6xl mx-auto px-4 h-full flex justify-between items-center">
                 <Link href="/main">
                     <h1 className="text-xl font-bold">YK-Intelligence</h1>
-                    <h1 className="text-sm text-secondary-foreground">מערכת לניהול דו&quotחות</h1>
+                    <h1 className="text-sm text-secondary-foreground">{'מערכת לניהול דו"חות'}</h1>
                 </Link>
                 <div className="flex items-center gap-4">
 

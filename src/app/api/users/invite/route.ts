@@ -1,87 +1,45 @@
-import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import supabaseAdmin from '@/src/lib/supabaseAdmin'
-import { SITE_URL } from '@/src/environment'
-import {  requireAdmin } from '@/src/lib/auth-helper'
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+
+// ✅ Secure Supabase Admin Client (for server use only)
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!, // ⛔ NEVER expose in frontend
+  { auth: { persistSession: false } }
+);
 
 export async function POST(req: Request) {
   try {
+    const { email, name, role } = await req.json(); // Expecting { email: "user@example.com", role: "user" }
+    if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
 
-    await requireAdmin()
-    
-    const { email, name } = await req.json()
+    // ✅ Check if the email is already registered
+    const { data: existingUsers, error: fetchError } = await supabaseAdmin.auth.admin.listUsers();
+    if (fetchError) throw new Error(fetchError.message);
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      )
+    const isEmailRegistered = existingUsers?.users.some((user) => user.email === email);
+    if (isEmailRegistered) {
+      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 });
     }
 
-    if (!name) {
-      return NextResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      )
-    }
+    // ✅ Create a new user (without a password)
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      email_confirm: false,
+    });
 
+    if (error) throw new Error(error.message);
+    const userId = data.user?.id;
 
-    // Check if user already exists
-    const { data: existingUser } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single()
+    // ✅ Store invited user in the "profiles" table
+    const { error: dbError } = await supabaseAdmin
+      .from("profiles")
+      .insert([{ id: userId, email: email, role: role, name: name }]);
 
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'User already exists' },
-        { status: 400 }
-      )
-    }
+    if (dbError) throw new Error(dbError.message);
 
-    // Create user with invitation
-    const { data, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${SITE_URL}/auth/callback`,
-    })
-
-    if (inviteError) {
-      console.error('Invite error:', inviteError)
-      throw inviteError
-    }
-
-    if (!data?.user?.id) {
-      throw new Error('Failed to create user')
-    }
-
-    // Create profile after successful invitation
-    const { error: createProfileError } = await supabaseAdmin
-      .from('profiles')
-      .insert({
-        id: data.user.id,
-        email: email,
-        name: name,
-        role: 'client',
-        confirmed: false,
-        created_at: new Date().toISOString()
-      })
-
-    if (createProfileError) {
-      console.error('Profile creation error:', createProfileError)
-      // Try to clean up the auth user if profile creation fails
-      await supabaseAdmin.auth.admin.deleteUser(data.user.id)
-      throw createProfileError
-    }
-
-    return NextResponse.json({
-      success: true,
-      userId: data.user.id
-    })
-  } catch (error) {
-    console.error('Full invitation error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to send invitation' },
-      { status: 500 }
-    )
+    return NextResponse.json({ message: "User invited successfully", userId });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-} 
+}

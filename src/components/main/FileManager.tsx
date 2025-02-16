@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/src/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/table"
-import supabase from "@/src/lib/supabaseClientComponentClient"
-import { FileIcon, DownloadIcon, Loader2, Eye, Download, Trash2, Pencil, MoreHorizontal } from "lucide-react"
-import { isAdmin, getUser } from "@/src/lib/auth-helper"
+import { FileIcon, Loader2, Eye, Download, Trash2, Pencil, MoreHorizontal } from "lucide-react"
+import { Database } from "@/src/types/supabase"
 import {
   Select,
   SelectContent,
@@ -39,85 +38,57 @@ interface FileRecord {
   created_at: string
   file_type: string
   file_size: number
-  uploaded_by: string
-  profiles: { name: string }
+  uploaded_by: { name: string }
+  user: { name: string }
 }
 
-interface User {
-  id: string
-  name: string
-  email: string
-}
+type Profile = Database['public']['Tables']['profiles']['Row']
+
 
 export function FileManager() {
-  const [files, setFiles] = useState<FileRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [uploadLoading, setUploadLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [users, setUsers] = useState<User[]>([])
+  const [profiles, setProfiles] = useState<Profile[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string>("")
   const [showUploadDialog, setShowUploadDialog] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [displayName, setDisplayName] = useState<string>("")
+
   const { user, loading: user_loading } = useAuth()
 
+  const [files, setFiles] = useState<FileRecord[]>([]);
+
+  useEffect(() => {//fetch files
+    const fetchFiles = async () => {
+      setIsLoading(true);
+      const res = await fetch("/api/files");
+      const data = await res.json();
+      if (!data.error) setFiles(data.files);
+      else setError(data.error)
+      console.log(data.files)
+      setIsLoading(false);
+    };
+
+    fetchFiles();
+  }, []);
+
+  useEffect(() => {//fetch profiles
+    if (!user?.isAdmin) return
+    const fetchProfiles = async () => {
+      setIsLoading(true);
+      const res = await fetch("/api/profiles");
+      const data = await res.json();
+
+      if (!data.error) setProfiles(data.profiles);
+      else setError(data.error)
+      setIsLoading(false);
+    };
+
+    fetchProfiles();
+  }, [user?.isAdmin]);
 
 
-  const fetchFiles = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      let query = supabase.from('files').select(`
-        *,
-        profiles:user_id (
-          name
-        )
-      `)
-      if (!user?.isAdmin) {
-        query = query.eq('user_id', user?.id)
-      }
-
-      const { data, error } = await query.order('created_at', { ascending: false })
-      console.log(data)
-
-      if (error) throw error
-      setFiles(data || [])
-    } catch (err) {
-      setError('שגיאה בטעינת דוח"ות')
-      console.error(err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user?.isAdmin])
-
-
-
-  const fetchUsers = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name, email')
-        .order('name', { ascending: true })
-
-      if (error) throw error
-      setUsers(data || [])
-    } catch (err) {
-      console.error('Error fetching users:', err)
-    }
-  }, [])
-
-  useEffect(() => {
-    const init = async () => {
-      if (!user_loading) {
-        await fetchFiles()
-        if (user?.isAdmin) {
-          await fetchUsers()
-        }
-      }
-    }
-    init()
-  }, [fetchFiles, fetchUsers, user])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -129,123 +100,88 @@ export function FileManager() {
   }
 
   const handleUpload = async () => {
+
     if (!selectedFile || !selectedUserId || !displayName) return
+    setUploadLoading(true)
+    setError(null)
 
     try {
-      setUploadLoading(true)
-      setError(null)
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("userId", selectedUserId);
+      formData.append("displayName", displayName);
 
-      const user = await getUser()
-      if (!user) throw new Error('User not found')
+      const res = await fetch("/api/files", {
+        method: "POST",
+        body: formData,
+      });
 
-      // Create a unique file name
-      const timestamp = Date.now()
-      const fileExt = selectedFile.name.split('.').pop()
-      const fileName = `${timestamp}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `${selectedUserId}/${fileName}`
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+      }
 
-      // Upload file to Supabase Storage
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('files')
-        .upload(filePath, selectedFile, {
-          cacheControl: '3600',
-          upsert: false
-        })
-
-      if (storageError) throw storageError
-
-      // Get the public URL for the file
-      const { data: { publicUrl } } = supabase.storage
-        .from('files')
-        .getPublicUrl(filePath)
-
-      // Insert file record into the database
-      const { error: dbError } = await supabase.from('files').insert({
-        name: displayName,
-        file_url: filePath,
-        file_type: selectedFile.type,
-        file_size: selectedFile.size,
-        uploaded_by: user.id,
-        user_id: selectedUserId,
-        description: '',
-      })
-
-      if (dbError) throw dbError
-
-      // Reset states
-      setSelectedFile(null)
-      setSelectedUserId("")
-      setDisplayName("")
-      setShowUploadDialog(false)
-
-      // Refresh the file list
-      await fetchFiles()
-
-      // Clear the file input
-      const fileInput = document.getElementById('file-upload') as HTMLInputElement
-      if (fileInput) fileInput.value = ''
 
     } catch (err) {
       console.error('Upload error:', err)
       setError('שגיאה בהעלאת הדו"ח')
     } finally {
+      // TODO: Refresh the file list
       setUploadLoading(false)
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement
+      if (fileInput) fileInput.value = ''
+      setSelectedFile(null)
+      setSelectedUserId("")
+      setDisplayName("")
+      setShowUploadDialog(false)
+
+    }
+  };
+
+  const handleDelete = async (fileId: string, fileUrl: string) => {
+    if (!confirm('האם אתה בטוח שברצונך למחוק דו"ח זה?')) return
+
+    const res = await fetch("/api/files/delete", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fileUrl, fileId }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error)
     }
   }
 
+
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('files')
-        .download(fileUrl)
+      const res = await fetch(`/api/files/download?fileUrl=${encodeURIComponent(fileUrl)}`);
+      if (!res.ok)
+        throw new Error("שגיאה ביצירת url להורדה")
 
-      if (error) throw error
+      const data = await res.json();
 
-      const url = URL.createObjectURL(data)
+      const url = URL.createObjectURL(data.url)
       const a = document.createElement('a')
       a.href = url
       a.download = fileName
       a.click()
       URL.revokeObjectURL(url)
+
     } catch (err) {
       setError('שגיאה בהורדת הדו"ח')
-      console.error(err)
-    }
-  }
-
-  const handleDelete = async (fileId: string, fileUrl: string) => {
-    if (!confirm('האם אתה בטוח שברצונך למחוק דו"ח זה?')) return
-
-    try {
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('files')
-        .remove([fileUrl])
-
-      if (storageError) throw storageError
-
-      // Delete from database
-      const { error: dbError } = await supabase
-        .from('files')
-        .delete()
-        .eq('id', fileId)
-
-      if (dbError) throw dbError
-
-      await fetchFiles()
-    } catch (err) {
-      setError('שגיאה במחיקת הדו"ח')
-      console.error(err)
     }
   }
 
   const handleView = async (fileUrl: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('files')
-        .createSignedUrl(fileUrl, 20)
+      const res = await fetch(`/api/files/view?fileUrl=${encodeURIComponent(fileUrl)}`);
+      if (!res.ok)
+        throw new Error("שגיאה ביצירת url להורדה")
 
-      if (error || !data) throw error
+      const data = await res.json();
+      if (!data) throw error
 
       window.open(data.signedUrl, '_blank')
     } catch (err) {
@@ -253,6 +189,7 @@ export function FileManager() {
       console.error(err)
     }
   }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
       {error && (
@@ -273,7 +210,7 @@ export function FileManager() {
                 מעלה...
               </>
             ) : (
-              'העלאת דו&quotח'
+              'העלאת דו"ח'
             )}
           </Button>
           <input
@@ -289,7 +226,7 @@ export function FileManager() {
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>פרטי הדו&quotח</DialogTitle>
+            <DialogTitle>{'פרטי הדו"ח'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -307,9 +244,9 @@ export function FileManager() {
                   <SelectValue placeholder="בחר משתמש" />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.email})
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {profile.name} ({profile.email})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -340,7 +277,7 @@ export function FileManager() {
 
       <Card>
         <CardHeader>
-          <CardTitle>דו&quotחות</CardTitle>
+          <CardTitle>{'דו"חות'}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -351,7 +288,7 @@ export function FileManager() {
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-right">דו&quotח</TableHead>
+                  <TableHead className="text-right">{'דו"ח'}</TableHead>
                   <TableHead className="text-right">שייך למשתמש</TableHead>
                   <TableHead className="text-right">סוג</TableHead>
                   <TableHead className="text-right">גודל</TableHead>
@@ -368,7 +305,7 @@ export function FileManager() {
                         {file.name}
                       </div>
                     </TableCell>
-                    <TableCell>{file.profiles.name}</TableCell>
+                    {user?.isAdmin && <TableCell>{file.user?.name}</TableCell>}
                     <TableCell>{file.file_type}</TableCell>
                     <TableCell>{(file.file_size / 1024 / 1024).toFixed(2)} MB</TableCell>
                     <TableCell>{new Date(file.created_at).toLocaleDateString('he-IL')}</TableCell>
@@ -418,11 +355,12 @@ export function FileManager() {
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                )
+                )}
                 {files.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      לא נמצאו דו&quotחות
+                     {' לא נמצאו דו"חות'}
                     </TableCell>
                   </TableRow>
                 )}
