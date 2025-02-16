@@ -5,7 +5,7 @@ import { UserManagement } from "./UserManagement"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/src/components/ui/tabs"
 import { useAuth } from "@/src/hooks/useAuth"
 
-export function Main() {
+function Main() {
   const { user, loading: user_loading } = useAuth()
 
   return (
@@ -28,3 +28,5 @@ export function Main() {
     </div>
   )
 }
+
+export default Main
