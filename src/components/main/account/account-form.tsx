@@ -1,6 +1,6 @@
 "use client"
 import { useCallback, useEffect, useState } from "react"
-import supabase from "@/src/supabase/supabase-client"
+import supabase from "@/src/lib/supabaseClientComponentClient"
 import type { Session, User } from "@supabase/supabase-js"
 import { useRouter } from "next/navigation"
 import { Button } from "@/src/components/ui/button"

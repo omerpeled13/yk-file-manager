@@ -1,7 +1,7 @@
 "use client";
 
 import { ROUTES } from "@/src/constants";
-import supabase from "@/src/supabase/supabase-client";
+import supabase from "@/src/lib/supabaseClientComponentClient";
 import React, { useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";

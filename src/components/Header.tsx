@@ -4,35 +4,26 @@ import { useState, useEffect } from "react"
 import { Button } from "@/src/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/src/components/ui/dropdown-menu"
 import { Avatar, AvatarImage, AvatarFallback } from "@/src/components/ui/avatar"
-import supabase from "@/src/supabase/supabase-client";
+import supabase from "@/src/lib/supabaseClientComponentClient";
 import { Session } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { ModeToggle } from "./ui/theme-provider"
 import Link from 'next/link'
 import { ChevronDownIcon, LogOutIcon } from "@/src/components/ui/icons"
-import { getUserProfile } from "@/src/supabase/auth-helper"
+import { getUserProfile, logout } from "@/src/lib/auth-helper"
+
 
 export default function Header() {
     const [session, setSession] = useState<Session | null>(null)
     const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
-    const [userName, setUserName] = useState<string>("")
-    const [loading, setLoading] = useState(true)
+    const [userName, setUserName] = useState<string | undefined>(undefined)
     const router = useRouter()
 
     const fetchUserProfile = async (userId: string) => {
         try {
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('name, email')
-                .eq('id', userId)
-                .single()
-
-            if (error) throw error
-
-            if (profile) {
-                setUserName(profile.name || '')
-                setUserEmail(profile.email)
-            }
+            const profile = await getUserProfile()
+            setUserEmail(profile?.email)
+            setUserName(profile?.name)
         } catch (error) {
             console.error('Error fetching user profile:', error)
         }
@@ -57,7 +48,7 @@ export default function Header() {
     }, [])
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut()
+        await logout()
         router.refresh()
     }
 

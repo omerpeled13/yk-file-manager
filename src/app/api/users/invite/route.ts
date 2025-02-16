@@ -1,39 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
-import supabaseAdmin from '@/src/supabase/supabase-admin'
-import { Database } from '@/src/types/supabase'
+import supabaseAdmin from '@/src/lib/supabaseAdmin'
 import { SITE_URL } from '@/src/environment'
+import {  requireAdmin } from '@/src/lib/auth-helper'
 
 export async function POST(req: Request) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+
+    await requireAdmin()
     
-    // Get the user's session
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    // Check admin status
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profile.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 401 }
-      )
-    }
-
-    const { email } = await req.json()
+    const { email, name } = await req.json()
 
     if (!email) {
       return NextResponse.json(
@@ -41,6 +17,14 @@ export async function POST(req: Request) {
         { status: 400 }
       )
     }
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'Name is required' },
+        { status: 400 }
+      )
+    }
+
 
     // Check if user already exists
     const { data: existingUser } = await supabaseAdmin
@@ -76,8 +60,9 @@ export async function POST(req: Request) {
       .insert({
         id: data.user.id,
         email: email,
+        name: name,
         role: 'client',
-        confirmed:false,
+        confirmed: false,
         created_at: new Date().toISOString()
       })
 
@@ -88,9 +73,9 @@ export async function POST(req: Request) {
       throw createProfileError
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      userId: data.user.id 
+      userId: data.user.id
     })
   } catch (error) {
     console.error('Full invitation error:', error)

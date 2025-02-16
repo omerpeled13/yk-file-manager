@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/src/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/table"
-import supabase from "@/src/supabase/supabase-client"
+import supabase from "@/src/lib/supabaseClientComponentClient"
 import { FileIcon, DownloadIcon, Loader2, Eye, Download, Trash2, Pencil, MoreHorizontal } from "lucide-react"
-import { isAdmin, getUser } from "@/src/supabase/auth-helper"
+import { isAdmin, getUser } from "@/src/lib/auth-helper"
 import {
   Select,
   SelectContent,

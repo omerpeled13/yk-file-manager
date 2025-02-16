@@ -1,6 +1,6 @@
 
 import { revalidatePath } from 'next/cache'
-import { supabase } from '@/src/supabase/supabase-client'
+import { supabase } from '@/src/lib/supabaseClientComponentClient'
 
 export async function signup(formData: FormData) {
   // type-casting here for convenience

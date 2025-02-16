@@ -1,4 +1,4 @@
-import supabase from './supabase-client'
+import supabase from './supabaseClientComponentClient'
 import { Database } from '../types/supabase'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -23,7 +23,7 @@ export async function getUserProfile() {
     console.error('Error fetching profile:', error)
     throw error
   }
-  
+
   return profile as Profile
 }
 
@@ -56,7 +56,7 @@ export async function requireAuth() {
 export async function requireAdmin() {
   try {
     const profile = await getUserProfile()
-    
+
     if (!profile || profile.role !== 'admin') {
       throw new Error('Admin access required')
     }
@@ -64,4 +64,8 @@ export async function requireAdmin() {
     console.error('Error in requireAdmin:', error)
     throw new Error('Admin access required')
   }
+}
+
+export async function logout() {
+  await supabase.auth.signOut()
 }

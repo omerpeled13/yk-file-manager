@@ -6,8 +6,8 @@ import { Input } from "@/src/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/table"
 import { Loader2 } from "lucide-react"
-import supabase from "@/src/supabase/supabase-client"
-import { isAdmin } from "@/src/supabase/auth-helper"
+import supabase from "@/src/lib/supabaseClientComponentClient"
+import { isAdmin } from "@/src/lib/auth-helper"
 import { Database } from "@/src/types/supabase"
 import { Label } from "@radix-ui/react-dropdown-menu"
 
@@ -77,7 +77,7 @@ export function UserManagement() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email: newUserEmail }),
+                body: JSON.stringify({ email: newUserEmail, name:newUserName }),
             })
 
             const data = await response.json()
@@ -117,7 +117,7 @@ export function UserManagement() {
     }
 
     if (!isAdminUser) {
-        return <div>Access denied</div>
+        return <div>מאמת גישת מנהל</div>
     }
 
     return (

@@ -12,6 +12,7 @@ export interface Database {
       profiles: {
         Row: {
           id: string
+          name: string
           email: string
           role: 'admin' | 'client'
           created_at: string
