@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import PDFViewer from "./PDFViewer"
 import { Button } from "@/src/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/table"
@@ -53,10 +54,12 @@ export function FileManager() {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [showFileDialog, setShowFileDialog] = useState<'edit' | 'upload' | ''>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [selectedFileId, setSelectedFileId] = useState<string>("")
-  const [selectedUserId, setSelectedUserId] = useState<string>("")
-  const [selectedName, setSelectedName] = useState<string>("")
-  const [selectedDescription, setSelectedDescription] = useState<string>("")
+  const [selectedFileId, setSelectedFileId] = useState("")
+  const [selectedUserId, setSelectedUserId] = useState("")
+  const [selectedName, setSelectedName] = useState("")
+  const [selectedDescription, setSelectedDescription] = useState("")
+  const [signedUrl, setSignedUrl] = useState("")
+  const [isPdfViewerOpen,setIsPdfViewerOpen] = useState(false)
 
   const { user, loading: user_loading } = useAuth()
 
@@ -188,7 +191,8 @@ export function FileManager() {
       const data = await res.json();
       if (!data) throw error
 
-      window.open(data.url, '_blank')
+      setSignedUrl(data.url)
+      setIsPdfViewerOpen(true)
     } catch (err) {
       setError('שגיאה בפתיחת הדו"ח')
       console.error(err)
@@ -440,7 +444,9 @@ export function FileManager() {
             </Table>
           )}
         </CardContent>
+        
       </Card>
+      <PDFViewer pdfUrl={signedUrl} open={isPdfViewerOpen} onOpenChange={setIsPdfViewerOpen} trigger={<></>} />
     </div>
   )
 } 
