@@ -1,13 +1,12 @@
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 
-export async function GET(req: Request) {
-
-    //TODO: check if admin
+export async function GET(request: NextRequest) {    //TODO: check if admin
     try {
         const supabase = createRouteHandlerClient({ cookies });
-        const { fileUrl } = await req.json();
+        const fileUrl = request?.nextUrl?.searchParams.get('fileUrl')
+
         if (!fileUrl) {
             return NextResponse.json({ error: "File path and name are required" }, { status: 400 });
         }
@@ -15,7 +14,6 @@ export async function GET(req: Request) {
         const { data, error } = await supabase.storage
             .from('files')
             .createSignedUrl(fileUrl, 20)
-
         if (error) throw error
         return NextResponse.json({ url: data.signedUrl });
     } catch (error: any) {

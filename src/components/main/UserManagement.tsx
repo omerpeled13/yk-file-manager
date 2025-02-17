@@ -1,15 +1,16 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/src/components/ui/button"
 import { Input } from "@/src/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/table"
 import { Loader2 } from "lucide-react"
-import supabase from "@/src/lib/supabaseClientComponentClient"
 import { Database } from "@/src/types/supabase"
 import { Label } from "@radix-ui/react-dropdown-menu"
 import { useAuth } from "@/src/hooks/useAuth"
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -17,23 +18,22 @@ export function UserManagement() {
     const [profiles, setProfiles] = useState<Profile[]>([])
     const [newUserEmail, setNewUserEmail] = useState("")
     const [newUserName, setNewUserName] = useState("")
+    const [newUseRole, setNewUserRole] = useState<'client' | 'admin'>('client')
     const [invitingUser, setInvitingUser] = useState(false)
     const [loadingProfiles, setLoadingProfiles] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     const { user, loading: user_loading } = useAuth()
 
-
+    const fetchProfiles = async () => {
+        setLoadingProfiles(true);
+        const res = await fetch("/api/profiles");
+        const data = await res.json();
+        if (!data.error) setProfiles(data.profiles);
+        else setError(data.error)
+        setLoadingProfiles(false);
+    };
     useEffect(() => {//fetch profiles
-        const fetchProfiles = async () => {
-            setLoadingProfiles(true);
-            const res = await fetch("/api/profiles");
-            const data = await res.json();
-            if (!data.error) setProfiles(data.profiles);
-            else setError(data.error)
-            setLoadingProfiles(false);
-        };
-
         fetchProfiles();
     }, []);
 
@@ -47,7 +47,7 @@ export function UserManagement() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email: newUserEmail, name: newUserName }),
+                body: JSON.stringify({ email: newUserEmail, name: newUserName, role: newUseRole }),
             })
 
             const data = await response.json()
@@ -64,10 +64,12 @@ export function UserManagement() {
             console.error('Invitation error:', err)
         } finally {
             setInvitingUser(false)
+            await fetchProfiles()
         }
     }
-
     const handleDeleteUser = async (userId: string) => {
+        if (!window.confirm('מחיקת הלקוח תביא גם למחיקת כל הדו"חות שלו. האם אתה בטוח?')) return;
+
         try {
             setError(null)
 
@@ -83,6 +85,8 @@ export function UserManagement() {
         } catch (err) {
             setError('Failed to delete user')
             console.error(err)
+        } finally {
+            await fetchProfiles()
         }
     }
 
@@ -115,6 +119,17 @@ export function UserManagement() {
                         onChange={(e) => setNewUserName(e.target.value)}
                         disabled={invitingUser}
                     />
+                </div>
+                <div>
+                    <Select value={newUseRole} onValueChange={(newRole: 'client' | 'admin') => setNewUserRole(newRole)}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="בחר תפקיד" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="client">לקוח</SelectItem>
+                            <SelectItem value="admin">מנהל</SelectItem>
+                        </SelectContent>
+                    </Select>
 
                 </div>
                 <div>
@@ -152,6 +167,7 @@ export function UserManagement() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="text-right">אימייל</TableHead>
+                                    <TableHead className="text-right">שם</TableHead>
                                     <TableHead className="text-right">תפקיד</TableHead>
                                     <TableHead className="text-right">נוצר</TableHead>
                                     <TableHead className="text-right">פעולות</TableHead>
@@ -161,7 +177,8 @@ export function UserManagement() {
                                 {profiles.map((profile) => (
                                     <TableRow key={profile.id}>
                                         <TableCell>{profile.email}</TableCell>
-                                        <TableCell>{profile.role}</TableCell>
+                                        <TableCell>{profile.name}</TableCell>
+                                        <TableCell>{profile.role === 'admin' ? "מנהל" : "לקוח"}</TableCell>
                                         <TableCell>
                                             {new Date(profile.created_at).toLocaleDateString('he-IL')}
                                         </TableCell>
@@ -169,7 +186,7 @@ export function UserManagement() {
                                             <Button
                                                 variant="destructive"
                                                 size="sm"
-                                                onClick={() => handleDeleteUser(user.id)}
+                                                onClick={() => handleDeleteUser(profile.id)}
                                             >
                                                 מחק
                                             </Button>

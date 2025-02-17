@@ -28,7 +28,7 @@ export async function GET() {
         // Fetch all files
         const { data: files, error } = await supabase
             .from("files")
-            .select("name,file_url, user:profiles!user_id(name), uploaded_by:profiles!uploaded_by(name), file_type, created_at, file_size")
+            .select("id,name,file_url, user:profiles!user_id(name,id), uploaded_by:profiles!uploaded_by(name), file_type, created_at, file_size, description")
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
@@ -82,8 +82,9 @@ export async function POST(req: Request) {
             // Create a unique file name
             const formData = await req.formData();
             const file = formData.get("file") as File;
-            const userId = formData.get("userId");
+            const userId = formData.get("userId") as string;
             const displayName = formData.get("displayName") as string;
+            const description = formData.get("description") as string;
             const timestamp = Date.now()
             const fileExt = file.name.split('.').pop()
             const fileName = `${timestamp}-${Math.random().toString(36).substring(2)}.${fileExt}`
@@ -104,12 +105,6 @@ export async function POST(req: Request) {
 
             if (storageError) throw storageError
 
-            // // Get the public URL for the file
-            // const { data: { publicUrl } } = supabase.storage
-            //     .from('files')
-            //     .getPublicUrl(filePath)
-
-            // Insert file record into the database
             const { error: dbError } = await supabase.from('files').insert({
                 name: displayName,
                 file_url: filePath,
@@ -117,7 +112,7 @@ export async function POST(req: Request) {
                 file_size: file.size,
                 uploaded_by: (await supabase.auth.getUser()).data.user?.id,
                 user_id: userId,
-                description: '',
+                description: description,
             })
 
             if (dbError) throw dbError
@@ -139,7 +134,7 @@ export async function DELETE(req: Request) {
     try {
         const supabase = createRouteHandlerClient({ cookies });
         const { fileId, fileUrl } = await req.json();
-
+        console.log(fileId, fileUrl)
         if (!fileUrl) {
             return NextResponse.json({ error: "File path is required" }, { status: 400 });
         }
@@ -163,3 +158,45 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+export async function PATCH(req: Request) {
+    try {
+        const supabase = createRouteHandlerClient({ cookies });
+        const { id, name, description } = await req.json();
+
+        if (!id) return NextResponse.json({ error: "File ID is required" }, { status: 400 });
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+        if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+
+        if (profile.role !== "admin") {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const updates: any = {};
+        if (name) updates.name = name;
+        if (description) updates.description = description;
+
+        const { error: updateError } = await supabase
+            .from("files")
+            .update(updates)
+            .eq("id", id);
+
+        if (updateError) throw updateError;
+
+        return NextResponse.json({ message: "File updated successfully" });
+
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+

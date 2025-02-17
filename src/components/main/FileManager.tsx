@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/src/components/ui/dialog"
 import { Input } from "@/src/components/ui/input"
 import {
@@ -39,7 +40,7 @@ interface FileRecord {
   file_type: string
   file_size: number
   uploaded_by: { name: string }
-  user: { name: string }
+  user: { name: string, id: string }
 }
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -47,31 +48,33 @@ type Profile = Database['public']['Tables']['profiles']['Row']
 
 export function FileManager() {
   const [isLoading, setIsLoading] = useState(true)
-  const [uploadLoading, setUploadLoading] = useState(false)
+  const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [selectedUserId, setSelectedUserId] = useState<string>("")
-  const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const [showFileDialog, setShowFileDialog] = useState<'edit' | 'upload' | ''>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [displayName, setDisplayName] = useState<string>("")
+  const [selectedFileId, setSelectedFileId] = useState<string>("")
+  const [selectedUserId, setSelectedUserId] = useState<string>("")
+  const [selectedName, setSelectedName] = useState<string>("")
+  const [selectedDescription, setSelectedDescription] = useState<string>("")
 
   const { user, loading: user_loading } = useAuth()
 
   const [files, setFiles] = useState<FileRecord[]>([]);
 
-  useEffect(() => {//fetch files
-    const fetchFiles = async () => {
-      setIsLoading(true);
-      const res = await fetch("/api/files");
-      const data = await res.json();
-      if (!data.error) setFiles(data.files);
-      else setError(data.error)
-      console.log(data.files)
-      setIsLoading(false);
-    };
+  const fetchFiles = async () => {
+    if (user_loading) return;
+    setIsLoading(true);
+    const res = await fetch("/api/files");
+    const data = await res.json();
+    if (!data.error) setFiles(data.files);
+    else setError(data.error)
+    setIsLoading(false);
+  };
 
+  useEffect(() => {//fetch files
     fetchFiles();
-  }, []);
+  }, [user_loading]);
 
   useEffect(() => {//fetch profiles
     if (!user?.isAdmin) return
@@ -95,21 +98,22 @@ export function FileManager() {
     if (!file) return
 
     setSelectedFile(file)
-    setDisplayName(file.name)
-    setShowUploadDialog(true)
+    setSelectedName(file.name)
+    setShowFileDialog('upload')
   }
 
   const handleUpload = async () => {
 
-    if (!selectedFile || !selectedUserId || !displayName) return
-    setUploadLoading(true)
+    if (!selectedFile || !selectedUserId || !selectedName) return
+    setUpdating(true)
     setError(null)
 
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("userId", selectedUserId);
-      formData.append("displayName", displayName);
+      formData.append("displayName", selectedName);
+      formData.append("description", selectedDescription);
 
       const res = await fetch("/api/files", {
         method: "POST",
@@ -127,21 +131,23 @@ export function FileManager() {
       setError('שגיאה בהעלאת הדו"ח')
     } finally {
       // TODO: Refresh the file list
-      setUploadLoading(false)
+      setUpdating(false)
       const fileInput = document.getElementById('file-upload') as HTMLInputElement
       if (fileInput) fileInput.value = ''
       setSelectedFile(null)
       setSelectedUserId("")
-      setDisplayName("")
-      setShowUploadDialog(false)
+      setSelectedName("")
+      setSelectedDescription("")
+      setShowFileDialog('')
+      await fetchFiles();
 
     }
   };
 
   const handleDelete = async (fileId: string, fileUrl: string) => {
     if (!confirm('האם אתה בטוח שברצונך למחוק דו"ח זה?')) return
-
-    const res = await fetch("/api/files/delete", {
+    console.log(fileId)
+    const res = await fetch("/api/files", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileUrl, fileId }),
@@ -151,18 +157,17 @@ export function FileManager() {
     if (!res.ok) {
       setError(data.error)
     }
+    await fetchFiles();
   }
-
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
       const res = await fetch(`/api/files/download?fileUrl=${encodeURIComponent(fileUrl)}`);
       if (!res.ok)
         throw new Error("שגיאה ביצירת url להורדה")
-
-      const data = await res.json();
-
-      const url = URL.createObjectURL(data.url)
+      // Convert response to a blob
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = fileName
@@ -178,16 +183,63 @@ export function FileManager() {
     try {
       const res = await fetch(`/api/files/view?fileUrl=${encodeURIComponent(fileUrl)}`);
       if (!res.ok)
-        throw new Error("שגיאה ביצירת url להורדה")
+        throw new Error("שגיאה ביצירת url לצפייה")
 
       const data = await res.json();
       if (!data) throw error
 
-      window.open(data.signedUrl, '_blank')
+      window.open(data.url, '_blank')
     } catch (err) {
       setError('שגיאה בפתיחת הדו"ח')
       console.error(err)
     }
+  }
+
+  const handleEdit = async () => {
+    if (!selectedFileId || !selectedUserId || !selectedName) return
+
+    setUpdating(true)
+    setError(null)
+
+    try {
+      const res = await fetch("/api/files", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedFileId,
+          name: selectedName,
+          description: selectedDescription,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+      } else {
+        // Optionally, you can refresh the file list or update the UI accordingly
+        console.log("File updated successfully");
+      }
+    }
+    catch (err) {
+      console.error('Editing error:', err)
+      setError('שגיאה בעריכת הדו"ח')
+    } finally {
+      setUpdating(false)
+      setSelectedName("")
+      setSelectedUserId("")
+      setSelectedDescription("")
+      setSelectedFileId("")
+      setShowFileDialog('')
+      await fetchFiles();
+    }
+  }
+
+  const showEditDialog = async (fileName: string, fileId: string, fileDescription: string, fileUserId: string) => {
+    setSelectedName(fileName)
+    setSelectedUserId(fileUserId)
+    setSelectedDescription(fileDescription)
+    setSelectedFileId(fileId)
+    setShowFileDialog('edit')
   }
 
   return (
@@ -202,9 +254,9 @@ export function FileManager() {
         <div className="mb-6">
           <Button
             onClick={() => document.getElementById('file-upload')?.click()}
-            disabled={uploadLoading}
+            disabled={updating}
           >
-            {uploadLoading ? (
+            {updating ? (
               <>
                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                 מעלה...
@@ -218,28 +270,42 @@ export function FileManager() {
             id="file-upload"
             className="hidden"
             onChange={handleFileSelect}
-            disabled={uploadLoading}
+            disabled={updating}
           />
         </div>
       )}
 
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+      <Dialog open={!!showFileDialog} onOpenChange={(open: boolean) => {
+        if (!open) setShowFileDialog('')
+      }} >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{'פרטי הדו"ח'}</DialogTitle>
+            <DialogDescription>
+              {showFileDialog === 'edit' ? 'ערוך את פרטי הדו"ח' : 'העלה דו"ח חדש'}
+            </DialogDescription>
+
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">שם</label>
               <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
+                value={selectedName}
+                onChange={(e) => setSelectedName(e.target.value)}
                 placeholder='שם הדו"ח'
               />
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium">תיאור</label>
+              <Input
+                value={selectedDescription}
+                onChange={(e) => setSelectedDescription(e.target.value)}
+                placeholder='תיאור'
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">משתמש</label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <Select disabled={showFileDialog === 'edit'} value={selectedUserId} onValueChange={setSelectedUserId}>
                 <SelectTrigger>
                   <SelectValue placeholder="בחר משתמש" />
                 </SelectTrigger>
@@ -257,19 +323,29 @@ export function FileManager() {
             <Button
               variant="secondary"
               onClick={() => {
-                setShowUploadDialog(false)
+                setShowFileDialog('')
                 setSelectedFile(null)
+                setSelectedFileId('')
                 setSelectedUserId("")
-                setDisplayName("")
+                setSelectedDescription("")
+                setSelectedName("")
               }}
             >
               ביטול
             </Button>
             <Button
-              onClick={handleUpload}
-              disabled={!selectedUserId || !displayName || uploadLoading}
+              onClick={() => {
+                if (showFileDialog === 'edit') handleEdit()
+                else if (showFileDialog === 'upload') handleUpload()
+              }}
+              disabled={!selectedUserId || !selectedName || updating}
             >
-              {uploadLoading ? 'מעלה...' : 'העלה'}
+              {showFileDialog === 'edit' ?
+                (updating ? 'עורך...' : 'ערוך')
+                : (showFileDialog === 'upload' ?
+                  (updating ? 'מעלה...' : 'העלה')
+                  : '')}
+
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -289,11 +365,11 @@ export function FileManager() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">{'דו"ח'}</TableHead>
-                  <TableHead className="text-right">שייך למשתמש</TableHead>
-                  <TableHead className="text-right">סוג</TableHead>
+                  {user?.isAdmin && <TableHead className="text-right">שייך למשתמש</TableHead>}
+                  <TableHead className="text-right">תיאור</TableHead>
                   <TableHead className="text-right">גודל</TableHead>
                   <TableHead className="text-right">הועלה</TableHead>
-                  <TableHead className="text-right">פעולות</TableHead>
+                  <TableHead className="text-right">{user?.isAdmin ? 'פעולות' : 'צפייה'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -306,7 +382,7 @@ export function FileManager() {
                       </div>
                     </TableCell>
                     {user?.isAdmin && <TableCell>{file.user?.name}</TableCell>}
-                    <TableCell>{file.file_type}</TableCell>
+                    <TableCell>{file.description}</TableCell>
                     <TableCell>{(file.file_size / 1024 / 1024).toFixed(2)} MB</TableCell>
                     <TableCell>{new Date(file.created_at).toLocaleDateString('he-IL')}</TableCell>
                     <TableCell>
@@ -327,11 +403,7 @@ export function FileManager() {
                               <span>הורד</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedFile(null) // TODO: Implement edit functionality
-                              }}
-                            >
+                            <DropdownMenuItem onClick={() => { showEditDialog(file.name, file.id, file.description, file.user.id) }}>
                               <Pencil className="mr-2 h-4 w-4" />
                               <span>ערוך</span>
                             </DropdownMenuItem>
@@ -360,7 +432,7 @@ export function FileManager() {
                 {files.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                     {' לא נמצאו דו"חות'}
+                      {' לא נמצאו דו"חות'}
                     </TableCell>
                   </TableRow>
                 )}
