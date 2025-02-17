@@ -36,17 +36,16 @@ export async function DELETE(request: Request, { params }: { params: { userId: s
 // ✅ UPDATE a user by ID
 export async function PATCH(req: Request, { params }: { params: { userId: string } }) {
     try {
-        const userId = params;
+
+        const {userId} = params;
         if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
         const { updates } = await req.json(); // Expecting { updates: { field1: value, field2: value } }
         if (!updates) return NextResponse.json({ error: "No update data provided" }, { status: 400 });
-
         // ✅ Update user profile in the database
         const supabase = createRouteHandlerClient({ cookies });
         const { error } = await supabase.from("profiles").update(updates).eq("id", userId);
         if (error) throw new Error(error.message);
-
         return NextResponse.json({ message: "User updated successfully" });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

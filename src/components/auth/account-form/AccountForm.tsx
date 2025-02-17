@@ -10,36 +10,48 @@ import { useAuth } from "@/src/hooks/useAuth"
 
 export default function AccountForm() {
   const [loading, setLoading] = useState(true)
-  const [name, setName] = useState("")
+  const [selectedName, setSelectedName] = useState("")
+  const [error, setError] = useState("");
   const router = useRouter()
   const { user, loading: user_loading } = useAuth();
 
   useEffect(() => {
     setLoading(user_loading)
-    setName(user?.name!)
+    setSelectedName(user?.name!)
   }
-    , [user,user_loading])
+    , [user, user_loading])
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     router.refresh()
   }
 
-  async function updateProfile(name: string | null) {
+  async function updateProfile() {
+    if (!selectedName || !user?.id) return
+    setLoading(true)
+    setError("")
+
     try {
-      setLoading(true)
+      const res = await fetch(`/api/users/${user?.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          updates: {
+            name: selectedName,
+          }
+        }),
+      });
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          name: name,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user?.id)
-
-      if (error) throw error
-      alert("הפרופיל עודכן בהצלחה")
-    } catch (error) {
-      alert("אירעה שגיאה בעדכון הנתונים")
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+      } else {
+        alert("הפרטים שונו בהצלחה")
+        console.log("User updated successfully");
+      }
+    }
+    catch (err) {
+      console.error('Editing error:', err)
+      setError('שגיאה בעדכון המשתמש')
     } finally {
       setLoading(false)
     }
@@ -58,11 +70,11 @@ export default function AccountForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="name">שם מלא</Label>
-          <Input id="name" type="text" value={name || ""} onChange={(e) => setName(e.target.value)} />
+          <Input id="name" type="text" value={selectedName || ""} onChange={(e) => setSelectedName(e.target.value)} />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-2">
-        <Button className="w-full" onClick={() => updateProfile(name)} disabled={loading}>
+        <Button className="w-full" onClick={() => updateProfile()} disabled={loading || !selectedName || selectedName.length < 4}>
           {loading ? "טוען..." : "עדכן"}
         </Button>
         <Button variant="outline" className="w-full" onClick={handleSignOut}>
