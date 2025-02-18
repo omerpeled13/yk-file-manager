@@ -7,7 +7,7 @@ export interface File {
     file_type: string
     file_size: number
     uploaded_by: string
-    user_id: string
+    client_id: string
   }
   
   export interface Profile {

@@ -43,7 +43,7 @@ interface FileRecord {
   file_type: string
   file_size: number
   uploaded_by: { name: string }
-  user: { name: string, id: string }
+  client: { name: string, id: string }
 }
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -53,11 +53,11 @@ export function FileManager() {
   const [isLoading, setIsLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [clients, setClients] = useState<Profile[]>([])
   const [showFileDialog, setShowFileDialog] = useState<'edit' | 'upload' | ''>('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [selectedFileId, setSelectedFileId] = useState("")
-  const [selectedUserId, setSelectedUserId] = useState("")
+  const [selectedClientId, setSelectedClientId] = useState("")
   const [selectedName, setSelectedName] = useState("")
   const [selectedDescription, setSelectedDescription] = useState("")
   const [signedUrl, setSignedUrl] = useState("")
@@ -83,22 +83,23 @@ export function FileManager() {
 
   useEffect(() => {//fetch files
     fetchFiles();
+    console.log(files)
   }, [user_loading]);
 
-  useEffect(() => {//fetch profiles
-    if (!user?.isAdmin) return
-    const fetchProfiles = async () => {
+  useEffect(() => {//fetch clients
+    if (user?.role === 'user') return
+    const fetchClients = async () => {
       setIsLoading(true);
-      const res = await fetch("/api/profiles");
+      const res = await fetch("/api/clients");
       const data = await res.json();
 
-      if (!data.error) setProfiles(data.profiles);
+      if (!data.error) setClients(data.clients);
       else setError(data.error)
       setIsLoading(false);
     };
 
-    fetchProfiles();
-  }, [user?.isAdmin]);
+    fetchClients();
+  }, [user?.role]);
 
 
 
@@ -112,8 +113,6 @@ export function FileManager() {
       return;
     }
 
-
-
     setSelectedFile(file)
     setSelectedName(file.name)
     setShowFileDialog('upload')
@@ -121,14 +120,14 @@ export function FileManager() {
 
   const handleUpload = async () => {
 
-    if (!selectedFile || !selectedUserId || !selectedName) return
+    if (!selectedFile || !selectedClientId || !selectedName) return
     setUpdating(true)
     setError(null)
 
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      formData.append("userId", selectedUserId);
+      formData.append("clientId", selectedClientId);
       formData.append("displayName", selectedName);
       formData.append("description", selectedDescription);
 
@@ -147,24 +146,21 @@ export function FileManager() {
       console.error('Upload error:', err)
       setError('שגיאה בהעלאת הדו"ח')
     } finally {
-      // TODO: Refresh the file list
       setUpdating(false)
       const fileInput = document.getElementById('file-upload') as HTMLInputElement
       if (fileInput) fileInput.value = ''
       setSelectedFile(null)
-      setSelectedUserId("")
+      setSelectedClientId("")
       setSelectedName("")
       setSelectedDescription("")
       setShowFileDialog('')
       await fetchFiles();
-      console.log("Frfsdfhsdfhsdg")
-
     }
-  };
+  }
 
   const handleDelete = async (fileId: string, fileUrl: string) => {
     if (!confirm('האם אתה בטוח שברצונך למחוק דו"ח זה?')) return
-    console.log(fileId)
+
     const res = await fetch("/api/files", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -216,7 +212,7 @@ export function FileManager() {
   }
 
   const handleEdit = async () => {
-    if (!selectedFileId || !selectedUserId || !selectedName) return
+    if (!selectedFileId || !selectedClientId || !selectedName) return
 
     setUpdating(true)
     setError(null)
@@ -246,7 +242,7 @@ export function FileManager() {
     } finally {
       setUpdating(false)
       setSelectedName("")
-      setSelectedUserId("")
+      setSelectedClientId("")
       setSelectedDescription("")
       setSelectedFileId("")
       setShowFileDialog('')
@@ -254,10 +250,10 @@ export function FileManager() {
     }
   }
 
-  const showEditDialog = async (fileName: string, fileId: string, fileDescription: string, fileUserId: string) => {
+  const showEditDialog = async (fileName: string, fileId: string, fileDescription: string, fileClientId: string) => {
     setOpenDropdownId(null); // Ensure only the active dropdown closes
     setSelectedName(fileName)
-    setSelectedUserId(fileUserId)
+    setSelectedClientId(fileClientId)
     setSelectedDescription(fileDescription)
     setSelectedFileId(fileId)
     setShowFileDialog('edit')
@@ -282,7 +278,7 @@ export function FileManager() {
               {showFileDialog === 'edit' ? 'עריכת דו"ח' : 'דו"ח חדש'}
             </DialogTitle>
             <DialogDescription>
-              {'פרטי הדו"ח'}
+              {'הזן את פרטי הדו"ח'}
             </DialogDescription>
 
           </DialogHeader>
@@ -304,15 +300,15 @@ export function FileManager() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">משתמש</label>
-              <Select disabled={showFileDialog === 'edit'} value={selectedUserId} onValueChange={setSelectedUserId}>
+              <label className="text-sm font-medium">לקוח</label>
+              <Select dir="rtl" disabled={showFileDialog === 'edit'} value={selectedClientId} onValueChange={setSelectedClientId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="בחר משתמש" />
+                  <SelectValue placeholder="בחר לקוח" />
                 </SelectTrigger>
                 <SelectContent>
-                  {profiles.map((profile) => (
-                    <SelectItem key={profile.id} value={profile.id}>
-                      {profile.name} ({profile.email})
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -326,7 +322,7 @@ export function FileManager() {
                 setShowFileDialog('')
                 setSelectedFile(null)
                 setSelectedFileId('')
-                setSelectedUserId("")
+                setSelectedClientId("")
                 setSelectedDescription("")
                 setSelectedName("")
               }}
@@ -338,7 +334,7 @@ export function FileManager() {
                 if (showFileDialog === 'edit') handleEdit()
                 else if (showFileDialog === 'upload') handleUpload()
               }}
-              disabled={!selectedUserId || !selectedName || updating}
+              disabled={!selectedClientId || !selectedName || updating}
             >
               {showFileDialog === 'edit' ?
                 (updating ? 'עורך...' : 'ערוך')
@@ -355,7 +351,7 @@ export function FileManager() {
         <CardHeader>
           <CardTitle>
             <div className="flex justify-between items-center"><div>{'דו"חות'}</div>
-              {user?.isAdmin && (
+              {user?.role === 'admin' && (
                 <div>
                   <Button
                     onClick={() => document.getElementById('file-upload')?.click()}
@@ -395,11 +391,11 @@ export function FileManager() {
                   <TableHeader className="bg-white sticky top-0 shadow-md z-10">
                     <TableRow>
                       <TableHead className="text-right">{'דו"ח'}</TableHead>
-                      {user?.isAdmin && <TableHead className="text-right">שייך למשתמש</TableHead>}
+                      {user?.role === 'admin' && <TableHead className="text-right">לקוח</TableHead>}
                       <TableHead className="text-right">תיאור</TableHead>
                       <TableHead className="text-right">גודל</TableHead>
                       <TableHead className="text-right">הועלה</TableHead>
-                      <TableHead className="text-right">{user?.isAdmin ? 'פעולות' : 'צפייה'}</TableHead>
+                      <TableHead className="text-right">{user?.role === 'admin' ? 'פעולות' : 'צפייה'}</TableHead>
                     </TableRow>
                   </TableHeader>
                 </Table>
@@ -417,7 +413,7 @@ export function FileManager() {
                             {file.name}
                           </div>
                         </TableCell>
-                        {user?.isAdmin && <TableCell>{file.user?.name}</TableCell>}
+                        {user?.role === 'admin' && <TableCell>{file.client?.name}</TableCell>}
                         <TableCell className="relative group">
                           <TooltipProvider>
                             <Tooltip>
@@ -433,7 +429,7 @@ export function FileManager() {
                         <TableCell>{(file.file_size / 1024 / 1024).toFixed(2)} MB</TableCell>
                         <TableCell>{new Date(file.created_at).toLocaleDateString('he-IL')}</TableCell>
                         <TableCell>
-                          {user?.isAdmin ? (
+                          {user?.role === 'admin' ? (
                             <DropdownMenu
                               open={openDropdownId === file.id}
                               onOpenChange={(isOpen) => setOpenDropdownId(isOpen ? file.id : null)}
@@ -455,7 +451,7 @@ export function FileManager() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => {
                                   setOpenDropdownId(null);
-                                  setTimeout(() => showEditDialog(file.name, file.id, file.description, file.user.id), 50);
+                                  setTimeout(() => showEditDialog(file.name, file.id, file.description, file.client.id), 50);
                                 }}>
                                   <Pencil className="mr-2 h-4 w-4" />
                                   <span>ערוך</span>

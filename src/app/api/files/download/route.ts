@@ -6,9 +6,25 @@ export async function GET(request: NextRequest) {
     try {
         const supabase = createRouteHandlerClient({ cookies });
 
-        // ✅ Check authentication
-        const { data: userData, error: authError } = await supabase.auth.getUser();
-        if (authError || !userData?.user) {
+        // Get the current user
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        //fetch user profile
+        const { data: profile, error: profile_error } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+        if (profile_error) {
+            return NextResponse.json({ error: profile_error.message }, { status: 500 });
+        }
+
+        if (profile.role !== "admin") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

@@ -16,7 +16,7 @@ export async function GET() {
 
     const { data: profile, error: profile_error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("role,client_id")
         .eq("id", user.id)
         .single();
 
@@ -28,14 +28,26 @@ export async function GET() {
         // Fetch all profiles
         const { data: profiles, error: profiles_error } = await supabase
             .from("profiles")
-            .select("*")
+            .select("id,name,email,created_at,role,confirmed,client:clients!client_id(name,id)")
 
         if (profiles_error) {
             return NextResponse.json({ error: profiles_error.message }, { status: 500 });
         }
 
         return NextResponse.json({ profiles });
+    }
+    else if (profile.role === "client_admin") {
+        // Fetch client associated profiles
+        const { data: profiles, error: profiles_error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("client_id", profile.client_id)
 
+        if (profiles_error) {
+            return NextResponse.json({ error: profiles_error.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ profiles });
     }
     else {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

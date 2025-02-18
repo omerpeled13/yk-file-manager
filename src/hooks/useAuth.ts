@@ -9,7 +9,8 @@ export type UserProfile = {
   id: string;
   email: string | undefined;
   name: string | null;
-  isAdmin: boolean;
+  role: 'user' | 'client_admin' | 'admin';
+  client_id:string;
 };
 
 export const useAuth = () => {
@@ -32,7 +33,7 @@ export const useAuth = () => {
         // Fetch user details from the 'profiles' table
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('name, role')
+          .select('name, role, client_id')
           .eq('id', user.id)
           .single();
 
@@ -44,7 +45,8 @@ export const useAuth = () => {
           id: user.id,
           email: user.email,
           name: profile?.name || 'Unknown',
-          isAdmin: profile?.role==="admin" || false,
+          role:profile?.role,
+          client_id:profile?.client_id
         });
       }
 

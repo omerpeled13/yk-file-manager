@@ -1,19 +1,16 @@
 export const ROUTES = {
   LOGIN: '/login',
-  FORGOT_PASSWORD: '/password-recovery',
-  RESET_PASSWORD: '/password-reset',
   MAIN: '/main',
   HOME: '/',
   AUTH_CALLBACK: '/auth/callback',
 } as const
 
 // Define the type for unprotected routes
-type UnprotectedRoute = typeof ROUTES[keyof Pick<typeof ROUTES, 'LOGIN' | 'FORGOT_PASSWORD' | 'AUTH_CALLBACK'>]
+type UnprotectedRoute = typeof ROUTES[keyof Pick<typeof ROUTES, 'LOGIN' | 'AUTH_CALLBACK'>]
 
 // Create the array with the correct type
 export const UNPROTECTED_ROUTES: UnprotectedRoute[] = [
   ROUTES.LOGIN,
-  ROUTES.FORGOT_PASSWORD,
   ROUTES.AUTH_CALLBACK,
 ]
 
