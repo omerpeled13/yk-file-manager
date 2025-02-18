@@ -6,18 +6,19 @@ import { useEffect, useState, type ReactNode } from 'react';
 pdfjs.GlobalWorkerOptions.workerSrc = "pdf.worker.mjs";
 
 import { Button } from "@/src/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/src/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/src/components/ui/dialog"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 
 
 interface PDFViewerProps {
     pdfUrl: string
+    fileName:string
     trigger: ReactNode
     open: boolean
     onOpenChange: (open: boolean) => void
 }
 
-export default function PDFViewer({ pdfUrl, trigger, open, onOpenChange }: PDFViewerProps) {
+export default function PDFViewer({ pdfUrl,fileName, trigger, open, onOpenChange }: PDFViewerProps) {
     const [numPages, setNumPages] = useState<number | null>(null)
     const [pageNumber, setPageNumber] = useState(1)
     const [isLoading, setIsLoading] = useState(true)
@@ -60,6 +61,9 @@ export default function PDFViewer({ pdfUrl, trigger, open, onOpenChange }: PDFVi
                             <Loader2 className="w-8 h-8 animate-spin" />
                         </div>
                     )}
+                    <DialogDescription>
+                        {fileName}
+                    </DialogDescription>
 
                 </DialogHeader>
 

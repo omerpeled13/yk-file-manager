@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { ModeToggle } from "./ui/theme-provider"
 import Link from 'next/link'
 import { ChevronDownIcon, LogOutIcon } from "@/src/components/ui/icons"
-import { logout } from "@/src/lib/auth-helper"
 import { useAuth } from "../hooks/useAuth"
 
 
@@ -17,12 +16,28 @@ export default function Header() {
     const { user, loading: user_loading } = useAuth();
 
     const handleSignOut = async () => {
-        await logout()
-        router.refresh()
-    }
+        try {
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Logout failed');
+            }
+        } catch (err) {
+            console.log(err);
+        } finally {
+            router.refresh()
+        }
+    };
+
+
 
     return (
-        <header className="fixed top-0 left-0 right-0 bg-background border-b h-16">
+        <header className="fixed top-0 left-0 right-0 bg-background border-b h-16 z-10">
             <div className="max-w-6xl mx-auto px-4 h-full flex justify-between items-center">
                 <Link href="/main">
                     <h1 className="text-xl font-bold">YK-Intelligence</h1>
@@ -51,7 +66,7 @@ export default function Header() {
                         <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem>
                                 <Link href="/account" className="w-full">
-                                    <div className="text-sm text-muted-foreground">{ user?.email}</div>
+                                    <div className="text-sm text-muted-foreground">{user?.email}</div>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />

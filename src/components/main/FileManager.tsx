@@ -6,6 +6,8 @@ import { Button } from "@/src/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/src/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/src/components/ui/table"
 import { FileIcon, Loader2, Eye, Download, Trash2, Pencil, MoreHorizontal } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/src/components/ui/tooltip"
+
 import { Database } from "@/src/types/supabase"
 import {
   Select,
@@ -59,7 +61,11 @@ export function FileManager() {
   const [selectedName, setSelectedName] = useState("")
   const [selectedDescription, setSelectedDescription] = useState("")
   const [signedUrl, setSignedUrl] = useState("")
-  const [isPdfViewerOpen,setIsPdfViewerOpen] = useState(false)
+  const [signedFileName, setSignedFileName] = useState("")
+
+  const [isPdfViewerOpen, setIsPdfViewerOpen] = useState(false)
+
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const { user, loading: user_loading } = useAuth()
 
@@ -99,6 +105,14 @@ export function FileManager() {
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+
+    // Check if the selected file is a PDF
+    if (file.type !== 'application/pdf') {
+      alert('המערכת תומכת בקבצי PDF בלבד');
+      return;
+    }
+
+
 
     setSelectedFile(file)
     setSelectedName(file.name)
@@ -143,6 +157,7 @@ export function FileManager() {
       setSelectedDescription("")
       setShowFileDialog('')
       await fetchFiles();
+      console.log("Frfsdfhsdfhsdg")
 
     }
   };
@@ -182,7 +197,7 @@ export function FileManager() {
     }
   }
 
-  const handleView = async (fileUrl: string) => {
+  const handleView = async (fileUrl: string, fileName: string) => {
     try {
       const res = await fetch(`/api/files/view?fileUrl=${encodeURIComponent(fileUrl)}`);
       if (!res.ok)
@@ -192,7 +207,8 @@ export function FileManager() {
       if (!data) throw error
 
       setSignedUrl(data.url)
-      setIsPdfViewerOpen(true)
+      setSignedFileName(fileName);
+      setIsPdfViewerOpen(true);
     } catch (err) {
       setError('שגיאה בפתיחת הדו"ח')
       console.error(err)
@@ -239,6 +255,7 @@ export function FileManager() {
   }
 
   const showEditDialog = async (fileName: string, fileId: string, fileDescription: string, fileUserId: string) => {
+    setOpenDropdownId(null); // Ensure only the active dropdown closes
     setSelectedName(fileName)
     setSelectedUserId(fileUserId)
     setSelectedDescription(fileDescription)
@@ -247,46 +264,25 @@ export function FileManager() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8" dir="rtl">
+    <div className="max-w-6xl max-h-[70vh] mx-auto px-4 py-8 z-0">
       {error && (
         <div className="bg-red-50 text-red-800 p-4 rounded-md mb-4">
           {error}
         </div>
       )}
 
-      {user?.isAdmin && (
-        <div className="mb-6">
-          <Button
-            onClick={() => document.getElementById('file-upload')?.click()}
-            disabled={updating}
-          >
-            {updating ? (
-              <>
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                מעלה...
-              </>
-            ) : (
-              'העלאת דו"ח'
-            )}
-          </Button>
-          <input
-            type="file"
-            id="file-upload"
-            className="hidden"
-            onChange={handleFileSelect}
-            disabled={updating}
-          />
-        </div>
-      )}
-
       <Dialog open={!!showFileDialog} onOpenChange={(open: boolean) => {
-        if (!open) setShowFileDialog('')
+        if (!open) {
+          setShowFileDialog('')
+        }
       }} >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{'פרטי הדו"ח'}</DialogTitle>
+            <DialogTitle>
+              {showFileDialog === 'edit' ? 'עריכת דו"ח' : 'דו"ח חדש'}
+            </DialogTitle>
             <DialogDescription>
-              {showFileDialog === 'edit' ? 'ערוך את פרטי הדו"ח' : 'העלה דו"ח חדש'}
+              {'פרטי הדו"ח'}
             </DialogDescription>
 
           </DialogHeader>
@@ -357,96 +353,150 @@ export function FileManager() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{'דו"חות'}</CardTitle>
+          <CardTitle>
+            <div className="flex justify-between items-center"><div>{'דו"חות'}</div>
+              {user?.isAdmin && (
+                <div>
+                  <Button
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    disabled={updating || isLoading || user_loading}
+                  >
+                    {updating ? (
+                      <>
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                        מעלה...
+                      </>
+                    ) : (
+                      'העלה דו"ח חדש'
+                    )}
+                  </Button>
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                    disabled={updating}
+                  />
+                </div>
+              )}
+            </div>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="h-[60vh] flex flex-col">
           {isLoading ? (
             <div className="flex justify-center p-4">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : (
-            <Table className="table-fixed">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">{'דו"ח'}</TableHead>
-                  {user?.isAdmin && <TableHead className="text-right">שייך למשתמש</TableHead>}
-                  <TableHead className="text-right">תיאור</TableHead>
-                  <TableHead className="text-right">גודל</TableHead>
-                  <TableHead className="text-right">הועלה</TableHead>
-                  <TableHead className="text-right">{user?.isAdmin ? 'פעולות' : 'צפייה'}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {files.map((file) => (
-                  <TableRow key={file.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center">
-                        <FileIcon className="ml-2 h-4 w-4" />
-                        {file.name}
-                      </div>
-                    </TableCell>
-                    {user?.isAdmin && <TableCell>{file.user?.name}</TableCell>}
-                    <TableCell>{file.description}</TableCell>
-                    <TableCell>{(file.file_size / 1024 / 1024).toFixed(2)} MB</TableCell>
-                    <TableCell>{new Date(file.created_at).toLocaleDateString('he-IL')}</TableCell>
-                    <TableCell>
-                      {user?.isAdmin ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleView(file.file_url)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              <span>צפה</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownload(file.file_url, file.name)}>
-                              <Download className="mr-2 h-4 w-4" />
-                              <span>הורד</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => { showEditDialog(file.name, file.id, file.description, file.user.id) }}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              <span>ערוך</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(file.id, file.file_url)}
-                              className="text-red-600 focus:text-red-600"
+            <div className="flex flex-col flex-grow">
+              {/* Table Header - Fixed */}
+              <div className="overflow-hidden">
+                <Table className="table-fixed w-full">
+                  <TableHeader className="bg-white sticky top-0 shadow-md z-10">
+                    <TableRow>
+                      <TableHead className="text-right">{'דו"ח'}</TableHead>
+                      {user?.isAdmin && <TableHead className="text-right">שייך למשתמש</TableHead>}
+                      <TableHead className="text-right">תיאור</TableHead>
+                      <TableHead className="text-right">גודל</TableHead>
+                      <TableHead className="text-right">הועלה</TableHead>
+                      <TableHead className="text-right">{user?.isAdmin ? 'פעולות' : 'צפייה'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                </Table>
+              </div>
+
+              {/* Table Body - Scrollable */}
+              <div className="overflow-y-auto flex-grow max-h-[50vh] scrollbar-thin">
+                <Table className="table-fixed w-full border-collapse">
+                  <TableBody>
+                    {files.map((file) => (
+                      <TableRow key={file.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            <FileIcon className="ml-2 h-4 w-4" />
+                            {file.name}
+                          </div>
+                        </TableCell>
+                        {user?.isAdmin && <TableCell>{file.user?.name}</TableCell>}
+                        <TableCell className="relative group">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="max-w-[300px] truncate">{file.description}</div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">{file.description}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableCell>
+                        <TableCell>{(file.file_size / 1024 / 1024).toFixed(2)} MB</TableCell>
+                        <TableCell>{new Date(file.created_at).toLocaleDateString('he-IL')}</TableCell>
+                        <TableCell>
+                          {user?.isAdmin ? (
+                            <DropdownMenu
+                              open={openDropdownId === file.id}
+                              onOpenChange={(isOpen) => setOpenDropdownId(isOpen ? file.id : null)}
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              <span>מחק</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleView(file.file_url)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-                )}
-                {files.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      {' לא נמצאו דו"חות'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleView(file.file_url, file.name)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  <span>צפה</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDownload(file.file_url, file.name)}>
+                                  <Download className="mr-2 h-4 w-4" />
+                                  <span>הורד</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => {
+                                  setOpenDropdownId(null);
+                                  setTimeout(() => showEditDialog(file.name, file.id, file.description, file.user.id), 50);
+                                }}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  <span>ערוך</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDelete(file.id, file.file_url)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  <span>מחק</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleView(file.file_url, file.name)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {files.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          {' לא נמצאו דו"חות'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           )}
         </CardContent>
-        
+
       </Card>
-      <PDFViewer pdfUrl={signedUrl} open={isPdfViewerOpen} onOpenChange={setIsPdfViewerOpen} trigger={<></>} />
+      <PDFViewer fileName={signedFileName} pdfUrl={signedUrl} open={isPdfViewerOpen} onOpenChange={setIsPdfViewerOpen} trigger={<></>} />
     </div>
   )
 } 

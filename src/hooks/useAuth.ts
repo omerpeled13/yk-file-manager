@@ -1,6 +1,9 @@
 
 import { useEffect, useState } from 'react';
-import supabase from '@/src/lib/supabaseClientComponentClient';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Database } from '../types/supabase'
+
+const supabase = createClientComponentClient<Database>()
 
 export type UserProfile = {
   id: string;

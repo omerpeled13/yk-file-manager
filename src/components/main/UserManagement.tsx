@@ -95,7 +95,7 @@ export function UserManagement() {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-6xl max-h-[70vh] mx-auto px-4 py-8 z-0">
             <div className="flex justify-center gap-8 items-center border px-10 py-2 rounded-md bg-muted">
                 <div>
                     <Label className="justify-self-start">
@@ -157,46 +157,58 @@ export function UserManagement() {
                 <CardHeader>
                     <CardTitle>משתמשים</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="h-[50vh] flex flex-col">
                     {loadingProfiles ? (
                         <div className="flex justify-center p-4">
                             <Loader2 className="h-6 w-6 animate-spin" />
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="text-right">אימייל</TableHead>
-                                    <TableHead className="text-right">שם</TableHead>
-                                    <TableHead className="text-right">תפקיד</TableHead>
-                                    <TableHead className="text-right">נוצר</TableHead>
-                                    <TableHead className="text-right">פעולות</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {profiles.map((profile) => (
-                                    <TableRow key={profile.id}>
-                                        <TableCell>{profile.email}</TableCell>
-                                        <TableCell>{profile.name}</TableCell>
-                                        <TableCell>{profile.role === 'admin' ? "מנהל" : "לקוח"}</TableCell>
-                                        <TableCell>
-                                            {new Date(profile.created_at).toLocaleDateString('he-IL')}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => handleDeleteUser(profile.id)}
-                                            >
-                                                מחק
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        <div className="flex flex-col flex-grow">
+                            {/* Table Header - Fixed */}
+                            <div className="overflow-hidden">
+                                <Table className="table-fixed w-full">
+                                    <TableHeader className="bg-white sticky top-0 shadow-md z-10">
+                                        <TableRow>
+                                            <TableHead className="text-right">אימייל</TableHead>
+                                            <TableHead className="text-right">שם</TableHead>
+                                            <TableHead className="text-right">תפקיד</TableHead>
+                                            <TableHead className="text-right">נוצר</TableHead>
+                                            <TableHead className="text-right">פעולות</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                </Table>
+                            </div>
+
+                            {/* Table Body - Scrollable */}
+                            <div className="overflow-y-auto flex-grow max-h-[40vh] scrollbar-thin">
+                                <Table className="table-fixed w-full border-collapse">
+                                    <TableBody>
+                                        {profiles.map((profile) => (
+                                            <TableRow key={profile.id}>
+                                                <TableCell>{profile.email}</TableCell>
+                                                <TableCell>{profile.name}</TableCell>
+                                                <TableCell>{profile.role === 'admin' ? "מנהל" : "לקוח"}</TableCell>
+                                                <TableCell>
+                                                    {new Date(profile.created_at).toLocaleDateString('he-IL')}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => handleDeleteUser(profile.id)}
+                                                    >
+                                                        מחק
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
                     )}
                 </CardContent>
+
             </Card>
         </div>
     )

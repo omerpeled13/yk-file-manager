@@ -1,6 +1,5 @@
 "use client"
 import { useEffect, useState } from "react"
-import supabase from "@/src/lib/supabaseClientComponentClient"
 import { useRouter } from "next/navigation"
 import { Button } from "@/src/components/ui/button"
 import { Input } from "@/src/components/ui/input"
@@ -21,9 +20,23 @@ export default function AccountForm() {
   }
     , [user, user_loading])
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.refresh()
-  }
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      router.refresh()
+    }
+  };
 
   async function updateProfile() {
     if (!selectedName || !user?.id) return

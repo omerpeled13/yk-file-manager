@@ -1,6 +1,5 @@
 "use client";
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/src/components/ui/button";
@@ -10,29 +9,48 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
-  const supabase = createClientComponentClient();
 
   const handleSignIn = async () => {
+    setIsLoading(true);
     setError("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
 
-    if (error) {
-      setError(error.message);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: new URLSearchParams({
+          email: email,
+          password: password,
+        }),
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      if (res.ok) {
+        router.refresh();
+      } else {
+        const errorMessage = await res.text();
+        setError(errorMessage || 'התחברות נכשלה');
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error('שגיאה בהתחברות:', error);
+      setError('שגיאה בלתי צפויה בהתחברות');
+      setIsLoading(false);
       return;
     }
+  }
 
-    if (!data.user || !data.session) {
-      setError("Login failed");
-      return;
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (isLoading) return
+    if (event.key === 'Enter') {
+      handleSignIn();
     }
-
-    router.refresh();
   };
 
   return (
@@ -40,10 +58,10 @@ const LoginForm = () => {
       <div className="w-[30rem] flex flex-col items-center justify-center px-6 py-8 mx-auto">
         <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl mb-6">
           YK - Intelligence
-          <br/>
+          <br />
           {'מערכת הדו"חות'}
         </h1>
-        
+
         {error && (
           <div className="bg-red-50 text-red-800 p-4 rounded-md mb-4 w-full">
             {error}
@@ -57,23 +75,26 @@ const LoginForm = () => {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
           </div>
-          
+
           <div className="mb-6">
             <Input
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
           </div>
 
           <Button
             className="w-full"
+            disabled={isLoading}
             onClick={handleSignIn}
           >
-            התחבר
+            {isLoading ? "מתחבר..." : "התחבר"}
           </Button>
         </div>
       </div>
