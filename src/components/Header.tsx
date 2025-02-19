@@ -40,7 +40,7 @@ export default function Header() {
     return (
         <header className="fixed top-0 left-0 right-0 bg-background border-b h-16 z-10">
             <div className="max-w-6xl mx-auto px-4 h-full flex justify-between items-center">
-                <Link href="/main" className="flex items-center gap-2">
+                <Link href="/main" className="flex items-end gap-2">
                     {/* Logo Image */}
                     <Image
                         src={YKLogo} // Path to image in the public folder
@@ -51,7 +51,7 @@ export default function Header() {
                     />
                     {/* Text Below the Logo */}
                     <div>
-                        <h1 className="text-sm text-secondary-foreground self-end">{'ניהול דו"חות'}</h1>
+                        <h1 className="text-sm text-secondary-foreground">{'ניהול דו"חות'}</h1>
                     </div>
                 </Link>                <div className="flex items-center gap-4">
 
