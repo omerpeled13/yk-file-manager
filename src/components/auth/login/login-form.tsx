@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import Image from 'next/image';
+import YKLogo from '@/public/yk-logo.png';
+
 
 
 const LoginForm = () => {
@@ -60,7 +62,7 @@ const LoginForm = () => {
       <div className="w-[30rem] flex flex-col items-center justify-center px-6 py-8 mx-auto">
         <div className="mb-6 w-full">
           <Image
-            src="yk-logo.png" // path to image in the public folder
+            src={YKLogo} // path to image in the public folder
             alt="YK-Intelligence"
             layout="intrinsic" // Keeps the aspect ratio
             width={1366} // original width
