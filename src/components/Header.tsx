@@ -51,7 +51,7 @@ export default function Header() {
                     />
                     {/* Text Below the Logo */}
                     <div>
-                        <h1 className="text-sm text-secondary-foreground">{'ניהול דו"חות'}</h1>
+                        <h1 className="text-sm text-secondary-foreground mb-[10px]">{'ניהול דו"חות'}</h1>
                     </div>
                 </Link>                <div className="flex items-center gap-4">
 
