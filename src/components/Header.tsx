@@ -8,7 +8,8 @@ import { ModeToggle } from "./ui/theme-provider"
 import Link from 'next/link'
 import { ChevronDownIcon, LogOutIcon } from "@/src/components/ui/icons"
 import { useAuth } from "../hooks/useAuth"
-
+import Image from 'next/image'
+import YKLogo from '@/public/yk-logo.png'
 
 export default function Header() {
     const router = useRouter()
@@ -39,11 +40,21 @@ export default function Header() {
     return (
         <header className="fixed top-0 left-0 right-0 bg-background border-b h-16 z-10">
             <div className="max-w-6xl mx-auto px-4 h-full flex justify-between items-center">
-                <Link href="/main">
-                    <h1 className="text-xl font-bold">YK-Intelligence</h1>
-                    <h1 className="text-sm text-secondary-foreground">{'מערכת לניהול דו"חות'}</h1>
-                </Link>
-                <div className="flex items-center gap-4">
+                <Link href="/main" className="flex items-center gap-2">
+                    {/* Logo Image */}
+                    <Image
+                        src={YKLogo} // Path to image in the public folder
+                        alt="YK Logo"
+                        width={200} // Adjust width to fit the header
+                        height={60} // Adjust height to fit the header
+                        className="object-contain"
+                    />
+                    {/* Text Below the Logo */}
+                    <div>
+                        <h1 className="text-xl font-bold">YK</h1>
+                        <h1 className="text-sm text-secondary-foreground">{'מערכת לניהול דו"חות'}</h1>
+                    </div>
+                </Link>                <div className="flex items-center gap-4">
 
                     <ModeToggle />
                     <DropdownMenu>
