@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
+import Image from 'next/image';
+
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
