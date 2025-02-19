@@ -56,9 +56,18 @@ const LoginForm = () => {
   return (
     <section className="bg-blue-gray-50">
       <div className="w-[30rem] flex flex-col items-center justify-center px-6 py-8 mx-auto">
+        <div className="mb-6 w-full">
+          <Image
+            src="/yk-logo.png" // path to image in the public folder
+            alt="YK Logo"
+            layout="intrinsic" // Keeps the aspect ratio
+            width={1366} // original width
+            height={406} // original height
+            className="w-full" // Ensures it fills the width of its container
+          />
+        </div>
+
         <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl mb-6">
-          YK - Intelligence
-          <br />
           {'מערכת הדו"חות'}
         </h1>
 
