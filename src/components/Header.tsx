@@ -51,8 +51,8 @@ export default function Header() {
                     />
                     {/* Text Below the Logo */}
                     <div>
-                        <h1 className="text-xl font-bold">YK</h1>
-                        <h1 className="text-sm text-secondary-foreground">{'מערכת לניהול דו"חות'}</h1>
+                        <h1 className="text-xl font-bold">מערכת מאובטחת</h1>
+                        <h1 className="text-sm text-secondary-foreground">{'לניהול דו"חות'}</h1>
                     </div>
                 </Link>                <div className="flex items-center gap-4">
 
