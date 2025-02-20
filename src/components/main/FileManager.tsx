@@ -388,7 +388,7 @@ export function FileManager() {
               {/* Table Header - Fixed */}
               <div className="overflow-hidden">
                 <Table className="table-fixed w-full">
-                  <TableHeader className="container sticky top-0 shadow-md z-10">
+                  <TableHeader className="sticky top-0 shadow-md z-10">
                     <TableRow>
                       <TableHead className="text-right">{'דו"ח'}</TableHead>
                       {user?.role === 'admin' && <TableHead className="text-right">לקוח</TableHead>}
