@@ -231,7 +231,7 @@ export function UserManagement() {
                 <CardHeader>
                     <CardTitle>
                         <div className="flex justify-between items-center"><div>משתמשים</div>
-                            {(user?.role === 'admin' || user?.role === 'client_admin') && (
+                            {user?.role === 'admin' && (
                                 <div>
                                     <Button
                                         onClick={() => setShowAddUserDialog(true)}
@@ -269,7 +269,7 @@ export function UserManagement() {
                                             {user?.role === "admin" && <TableHead className="text-right">לקוח</TableHead>}
                                             <TableHead className="text-right">תפקיד</TableHead>
                                             <TableHead className="text-right">נוצר</TableHead>
-                                            <TableHead className="text-right">פעולות</TableHead>
+                                            {user?.role === "admin" &&<TableHead className="text-right">פעולות</TableHead>}
                                         </TableRow>
                                     </TableHeader>
                                 </Table>
@@ -284,11 +284,11 @@ export function UserManagement() {
                                                 <TableCell>{profile.email}</TableCell>
                                                 <TableCell>{profile.name}</TableCell>
                                                 {user?.role === "admin" && <TableCell>{profile.client?.name}</TableCell>}
-                                                <TableCell>{profile.role === 'admin' ? "מנהל" : (profile.role === 'client_admin' ? "מנהל לקוח" : "משתמש")}</TableCell>
+                                                <TableCell>{profile.role === 'admin' ? "מנהל" : (profile.role === 'client_admin' ? "מנהל לקוח" : (profile.role==='user' ? "משתמש" : "שגיאה בזיהו תפקיד"))}</TableCell>
                                                 <TableCell>
                                                     {new Date(profile.created_at).toLocaleDateString('he-IL')}
                                                 </TableCell>
-                                                <TableCell>
+                                                {user?.role === "admin" && <TableCell>
                                                     <Button
                                                         variant="destructive"
                                                         size="sm"
@@ -296,7 +296,7 @@ export function UserManagement() {
                                                     >
                                                         מחק
                                                     </Button>
-                                                </TableCell>
+                                                </TableCell>}
                                             </TableRow>
                                         ))}
                                     </TableBody>
