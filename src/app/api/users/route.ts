@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     if (role === "admin") { client_id_to_set = null }
     // ✅ Insert user data into "profiles" table
     const { error: dbError } = await supabase.from("profiles").insert([
-      { id: userId, email, name, client_id_to_set, role }
+      { id: userId, email, name, client_id: client_id_to_set, role }
     ]);
 
     if (dbError) throw new Error(dbError.message);
