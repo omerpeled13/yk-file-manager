@@ -82,7 +82,7 @@ export default function Header() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={handleSignOut}>
                                 <div className="flex items-center">
-                                    <LogOutIcon className="w-4 h-4 ml-2" />
+                                    <LogOutIcon className="w-4 h-4 mx-4" />
                                     התנתק
                                 </div>
                             </DropdownMenuItem>
