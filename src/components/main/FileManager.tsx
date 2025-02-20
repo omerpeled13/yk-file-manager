@@ -273,7 +273,7 @@ export function FileManager() {
         }
       }} >
         <DialogContent>
-          <DialogHeader classname="flex items-center">
+          <DialogHeader className="flex items-center">
             <DialogTitle>
               {showFileDialog === 'edit' ? 'עריכת דו"ח' : 'דו"ח חדש'}
             </DialogTitle>
