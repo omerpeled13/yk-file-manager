@@ -72,7 +72,7 @@ const LoginForm = () => {
         </div>
 
         <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl mb-6">
-          {'מערכת הדו"חות'}
+          {'מערכת לניהול דו"חות'}
         </h1>
 
         {error && (
