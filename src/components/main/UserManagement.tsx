@@ -262,7 +262,7 @@ export function UserManagement() {
                             {/* Table Header - Fixed */}
                             <div className="overflow-hidden">
                                 <Table className="table-fixed w-full">
-                                    <TableHeader className="bg-white sticky top-0 shadow-md z-10">
+                                    <TableHeader className="sticky top-0 shadow-md z-10">
                                         <TableRow>
                                             <TableHead className="text-right">אימייל</TableHead>
                                             <TableHead className="text-right">שם</TableHead>
