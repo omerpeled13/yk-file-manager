@@ -10,6 +10,7 @@ import { ChevronDownIcon, LogOutIcon } from "@/src/components/ui/icons"
 import { useAuth } from "../hooks/useAuth"
 import Image from 'next/image'
 import YKLogo from '@/public/yk-logo.png'
+import YKLogoDark from '@/public/yk-logo-dark.png'
 
 export default function Header() {
     const router = useRouter()
@@ -47,7 +48,14 @@ export default function Header() {
                         alt="YK Logo"
                         width={200} // Adjust width to fit the header
                         height={60} // Adjust height to fit the header
-                        className="object-contain"
+                        className="object-contain block dark:hidden"
+                    />
+                    <Image
+                        src={YKLogoDark} // Path to image in the public folder
+                        alt="YK Logo"
+                        width={200} // Adjust width to fit the header
+                        height={60} // Adjust height to fit the header
+                        className="object-contain hidden dark:block"
                     />
                     {/* Text Below the Logo */}
                     <div>
