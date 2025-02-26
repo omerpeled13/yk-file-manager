@@ -2,7 +2,6 @@
 
 import { Button } from "@/src/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/src/components/ui/dropdown-menu"
-import { Avatar, AvatarImage, AvatarFallback } from "@/src/components/ui/avatar"
 import { useRouter } from "next/navigation";
 import { ModeToggle } from "./ui/theme-provider"
 import Link from 'next/link'
@@ -11,14 +10,30 @@ import { useAuth } from "../hooks/useAuth"
 import Image from 'next/image'
 import YKLogo from '@/public/yk-logo.png'
 import YKLogoDark from '@/public/yk-logo-dark.png'
+import { useTheme } from 'next-themes';
 
 export default function Header() {
+    const { theme } = useTheme();
     const router = useRouter()
 
     const { user, loading: user_loading } = useAuth();
 
     const handleSignOut = async () => {
         try {
+            //set otp verified to false
+            const res = await fetch(`/api/users/${user?.id}/otpVerify`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    verified: false
+                }),
+            });
+
+            if (!res.ok) {
+                throw new Error('Failed to update OTP verification status');
+            }
+
+            //sign out
             const response = await fetch('/api/auth/logout', {
                 method: 'POST',
                 headers: {
@@ -42,21 +57,24 @@ export default function Header() {
         <header className="fixed top-0 left-0 right-0 bg-background border-b h-16 z-10">
             <div className="max-w-6xl mx-auto px-4 h-full flex justify-between items-center">
                 <Link href="/main" className="flex items-end gap-2">
-                    {/* Logo Image */}
-                    <Image
-                        src={YKLogo} // Path to image in the public folder
-                        alt="YK Logo"
-                        width={200} // Adjust width to fit the header
-                        height={60} // Adjust height to fit the header
-                        className="object-contain block dark:hidden"
-                    />
-                    <Image
-                        src={YKLogoDark} // Path to image in the public folder
-                        alt="YK Logo"
-                        width={200} // Adjust width to fit the header
-                        height={60} // Adjust height to fit the header
-                        className="object-contain hidden dark:block"
-                    />
+                    {theme === 'dark' ? (
+                        <Image
+                            src={YKLogoDark} // Path to image in the public folder
+                            alt="YK Logo"
+                            width={200} // Adjust width to fit the header
+                            height={60} // Adjust height to fit the header
+                            className="object-contain"
+                        />
+                    ) : (
+                        <Image
+                            src={YKLogo} // Path to image in the public folder
+                            alt="YK Logo"
+                            width={200} // Adjust width to fit the header
+                            height={60} // Adjust height to fit the header
+                            className="object-contain"
+                        />
+                    )}
+
                     {/* Text Below the Logo */}
                     <div>
                         <h1 className="text-sm text-secondary-foreground mb-[10px]">{'מערכת לניהול דו"חות'}</h1>
@@ -74,26 +92,24 @@ export default function Header() {
                                         היי {user?.name}
                                     </span>
                                 )}
-                                <Avatar className="h-9 w-9 mx-1">
-                                    <AvatarImage src="/placeholder-user.jpg" alt={user?.email} />
-                                    <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
-                                </Avatar>
                                 <ChevronDownIcon className="w-4 h-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem>
-                                <Link href="/account" className="w-full">
-                                    <div className="text-sm text-muted-foreground">{user?.email}</div>
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleSignOut}>
-                                <div className="flex items-center">
-                                    <LogOutIcon className="w-4 h-4 mx-4" />
-                                    התנתק
-                                </div>
-                            </DropdownMenuItem>
+                        <DropdownMenuContent align="start" className="w-48">
+                            <div dir="rtl">
+                                <DropdownMenuItem>
+                                    <Link href="/account" className="w-full">
+                                        <div className="text-sm text-muted-foreground">ערוך פרופיל</div>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleSignOut}>
+                                    <div className="flex items-center">
+                                        <LogOutIcon className="w-4 h-4 ml-2" />
+                                        התנתק
+                                    </div>
+                                </DropdownMenuItem>
+                            </div>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>

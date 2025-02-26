@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const { email, password, name, client_id, role } = await req.json();
     // ✅ Validate input
-    if (!email || !password || !name || !client_id || !role) {
+    if (!email || !password || !name || (!client_id && role !== 'admin') || !role) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
     }
 

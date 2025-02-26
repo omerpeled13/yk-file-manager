@@ -3,6 +3,7 @@ import { Open_Sans } from "next/font/google";
 import "../globals.css";
 import { ThemeProvider } from "@/src/components/ui/theme-provider";
 import Header from "../../components/Header";
+import AutoLogout from "../../components/AutoLogout";
 
 const openSans = Open_Sans({ subsets: ["hebrew"] });
 
@@ -25,12 +26,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-1 pt-16">
-              {children}
-            </main>
-          </div>
+          <AutoLogout>
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-1 pt-16">
+                {children}
+              </main>
+            </div>
+          </AutoLogout>
         </ThemeProvider>
       </body>
     </html>

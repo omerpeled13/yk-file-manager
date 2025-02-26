@@ -22,6 +22,20 @@ export default function AccountForm() {
     , [user, user_loading])
   const handleSignOut = async () => {
     try {
+      //set otp verified to false
+      const res = await fetch(`/api/users/${user?.id}/otpVerify`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verified: false
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update OTP verification status');
+      }
+
+      //sign out
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
@@ -44,9 +58,9 @@ export default function AccountForm() {
     setLoading(true)
     setError("")
 
-    let profileUpdates:any = {name:selectedName}
-    let authUpdates:any = {}
-    if (newPassword){
+    let profileUpdates: any = { name: selectedName }
+    let authUpdates: any = {}
+    if (newPassword) {
       authUpdates.password = newPassword
     }
     try {
@@ -54,7 +68,7 @@ export default function AccountForm() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          updates: {profileUpdates,authUpdates}
+          updates: { profileUpdates, authUpdates }
         }),
       });
 
@@ -63,7 +77,6 @@ export default function AccountForm() {
         setError(data.error);
       } else {
         alert("הפרטים שונו בהצלחה")
-        console.log("User updated successfully");
       }
     }
     catch (err) {
@@ -71,6 +84,7 @@ export default function AccountForm() {
       setError('שגיאה בעדכון המשתמש')
     } finally {
       setLoading(false)
+      router.refresh()
     }
   }
 
@@ -81,6 +95,11 @@ export default function AccountForm() {
         <CardDescription>עדכן את פרטי החשבון שלך</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {error && (
+          <div className="space-y-2 bg-red-50 text-red-800 p-4 rounded-md w-full">
+            {error}
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="email">אימייל</Label>
           <Input id="email" type="text" value={user?.email || ""} disabled />
@@ -91,11 +110,11 @@ export default function AccountForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">סיסמה חדשה</Label>
-          <Input 
-            id="password" 
-            type="password" 
-            value={newPassword} 
-            onChange={(e) => setNewPassword(e.target.value)} 
+          <Input
+            id="password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
           />
         </div>
       </CardContent>
@@ -106,6 +125,11 @@ export default function AccountForm() {
         <Button variant="outline" className="w-full" onClick={handleSignOut}>
           התנתק
         </Button>
+
+        <Button variant="link" className="w-full text-md" onClick={() => router.push("/main")}>
+          {'חזרה לניהול דו"חות'}
+        </Button>
+
       </CardFooter>
     </Card>
   )

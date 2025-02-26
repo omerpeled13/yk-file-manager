@@ -44,7 +44,7 @@ export async function DELETE(request: Request, { params }: { params: { userId: s
         }
         else if (profile.role === "client_admin") {
             // ✅ Delete user from profiles
-            
+
             const { data: profileToDelete, error: profileToDelete_error } = await supabase
                 .from("profiles")
                 .select("id,role,client_id")
@@ -84,8 +84,8 @@ export async function DELETE(request: Request, { params }: { params: { userId: s
 export async function PATCH(req: Request, { params }: { params: { userId: string } }) {
     try {
         const supabase = createRouteHandlerClient({ cookies });
+        const { updates } = await req.json(); // Expecting { updates: { authUpdates: { email: value, password: value }, profileUpdates: { field1: value, field2: value } }
 
-        const { updates } = await req.json(); // Expecting { updates: { field1: value, field2: value } }
         if (!updates) return NextResponse.json({ error: "No update data provided" }, { status: 400 });
 
         const { userId: userToUpdateId } = params;
@@ -103,45 +103,44 @@ export async function PATCH(req: Request, { params }: { params: { userId: string
             .single();
 
         if (profile_error) return NextResponse.json({ error: profile_error.message }, { status: 500 });
-        
-        if (profile.role === "admin") {
-            // ✅ Update user profile in the database
-            const supabase = createRouteHandlerClient({ cookies });
-            const { error } = await supabase.from("profiles").update(updates.profileUpdates).eq("id", userToUpdateId);
-            if (error) throw new Error(error.message);
-            return NextResponse.json({ message: "User updated successfully" });
+
+        /* else if (profile.role === "client_admin") {
+
+             const { data: profileToUpdate, error: profileToUpdate_error } = await supabaseAdmin
+                 .from("profiles")
+                 .select("id,role,client_id")
+                 .eq("id", userToUpdateId)
+                 .single()
+             if (profileToUpdate_error) return NextResponse.json({ error: profileToUpdate_error }, { status: 400 })
+             if (!profileToUpdate) return NextResponse.json({ error: "problem with profile to update" }, { status: 400 })
+             if (profileToUpdate.client_id !== profile.client_id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+             if (profileToUpdate.id === user.id) return NextResponse.json({ error: "you can't delete your own user" }, { status: 401 })
+             //authenticated
+             // ✅ Update user profile in the database
+             const { error: prodileError } = await supabase.from("profiles").update(updates).eq("id", userToUpdateId);
+             if (prodileError) throw new Error(prodileError.message)
+             const { error: authError } = await supabase.auth.updateUser(updates.authUpdates);
+             if (authError) throw new Error(authError.message)
+             return NextResponse.json({ message: "User updated successfully" });
+         }*/
+
+        if (profile.role === "user" || profile.role === "client_admin") {
+            if (user.id !== userToUpdateId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        else if (profile.role === "client_admin") {
-
-            const { data: profileToUpdate, error: profileToUpdate_error } = await supabaseAdmin
-                .from("profiles")
-                .select("id,role,client_id")
-                .eq("id", userToUpdateId)
-                .single();
-
-            if (profileToUpdate_error) return NextResponse.json({ error: profileToUpdate_error }, { status: 400 });
-
-            if (!profileToUpdate) return NextResponse.json({ error: "problem with profile to update" }, { status: 400 });
-
-            if (profileToUpdate.client_id !== profile.client_id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-            if (profileToUpdate.id === user.id) return NextResponse.json({ error: "you can't delete your own user" }, { status: 401 });
-
-            //authenticated
-            // ✅ Update user profile in the database
-            const { error:prodileError } = await supabase.from("profiles").update(updates).eq("id", userToUpdateId);
-            if (prodileError) throw new Error(prodileError.message);
-
-            const { error:authError } = await supabase.auth.updateUser(updates.authUpdates);
-            if (authError) throw new Error(authError.message);
-
-            return NextResponse.json({ message: "User updated successfully" });
-
-
-        }
-        else {
+        else if (profile.role !== "admin") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        //update data
+        console.log(updates.profileUpdates);
+        console.log(updates.authUpdates);
+        const { error } = await supabase.from("profiles").update(updates.profileUpdates).eq("id", userToUpdateId);
+        if (error) throw new Error(error.message);
+
+        const { error: authError } = await supabase.auth.updateUser(updates.authUpdates);
+        if (authError) throw new Error(authError?.message);
+
+        return NextResponse.json({ message: "User updated successfully" });
 
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

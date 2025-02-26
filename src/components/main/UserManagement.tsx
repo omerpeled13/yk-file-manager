@@ -66,7 +66,11 @@ export function UserManagement() {
     }, []);
 
     const handleAddUser = async () => {
-        if (!newUserEmail || !newUserName || !newUserRole || !newUserClientId || !newUserPassword) return
+        if (!newUserEmail || !newUserName || !newUserRole || !newUserPassword || (!newUserClientId && newUserRole !== 'admin')) 
+        {
+            setError('אנא מלא את כל השדות')
+            return
+        }
         try {
             setAddingUser(true)
             setError(null)
@@ -211,7 +215,7 @@ export function UserManagement() {
                         </Button>
                         <Button
                             onClick={handleAddUser}
-                            disabled={!newUserClientId || !newUserEmail || !newUserName || !newUserPassword || !newUserRole || addingUser}
+                            disabled={(!newUserClientId && newUserRole !== 'admin') || !newUserEmail || !newUserName || !newUserPassword || !newUserRole || addingUser}
                         >
                             {addingUser ? 'מוסיף...' : 'הוסף'}
                         </Button>
