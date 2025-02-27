@@ -133,7 +133,7 @@ export function UserManagement() {
 
             <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog} >
                 <DialogContent >
-                    <DialogHeader>
+                    <DialogHeader className="flex flex-col space-y-1.5 items-center">
                         <DialogTitle>
                             הוספת משתמש
                         </DialogTitle>
@@ -160,7 +160,7 @@ export function UserManagement() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium">סוג משתמש</label>
-                            <Select value={newUserRole} onValueChange={(newRole: 'user' | 'admin' | 'client_admin') => { if (newRole === 'admin') { setNewUserClientId('') }; setNewUserRole(newRole) }}>
+                            <Select dir="rtl" value={newUserRole} onValueChange={(newRole: 'user' | 'admin' | 'client_admin') => { if (newRole === 'admin') { setNewUserClientId('') }; setNewUserRole(newRole) }}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="בחר תפקיד" />
                                 </SelectTrigger>
@@ -175,7 +175,7 @@ export function UserManagement() {
                             user?.role === "admin" &&
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">לקוח</label>
-                                <Select disabled={newUserRole==='admin'} value={newUserClientId} onValueChange={setNewUserClientId}>
+                                <Select dir="rtl" disabled={newUserRole==='admin'} value={newUserClientId} onValueChange={setNewUserClientId}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="בחר לקוח" />
                                     </SelectTrigger>

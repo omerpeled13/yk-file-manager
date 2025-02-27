@@ -46,7 +46,7 @@ export default function PDFViewer({ pdfUrl, fileName, trigger, open, onOpenChang
         }}>
             {trigger}
             <DialogContent className="max-w-4xl pb-2 pt-4 w-11/12 h-[99vh] overflow-hidden">
-                <DialogHeader className='items-center'>
+                <DialogHeader className="flex flex-col space-y-1.5 items-center">
                     <DialogTitle>{'צפייה בדו"ח'}</DialogTitle>
                     {isLoading && (
                         <div className="flex items-center justify-center w-full h-full">

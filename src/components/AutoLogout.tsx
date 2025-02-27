@@ -8,7 +8,6 @@ export default function AutoLogout({ children }: { children: React.ReactNode }) 
   const { user, loading: user_loading } = useAuth();
   // Function to reset the logout timer
   const resetTimer = () => {
-    console.log("Resetting timer");
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
       console.log("User inactive, logging out...");

@@ -1,18 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import Image from 'next/image';
 import YKLogo from '@/public/yk-logo.png';
+import YKLogoDark from '@/public/yk-logo-dark.png'
 import SupabaseLogo from '@/public/supabase-logo.png';
+import SupabaseLogoDark from '@/public/supabase-logo-dark.png';
 import Link from "next/link";
+import { useTheme } from 'next-themes';
 import { useAuth } from "@/src/hooks/useAuth";
 
 
-
 const AuthForm = () => {
+  const { theme } = useTheme();
+
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -110,23 +114,20 @@ const AuthForm = () => {
       handleSignIn();
     }
   };
+  if (!theme) return
 
   return (
     <div className="w-full h-full">
-      <section className="bg-blue-gray-50">
+      <section className="min-h-screen flex items-center justify-center relative">
         <div className="w-[30rem] flex flex-col items-center justify-center px-6 py-8 mx-auto">
           <div className="mb-6 w-full">
+
             <Image
-              src={YKLogo} // path to image in the public folder
-              alt="YK-Intelligence"
-              layout="intrinsic" // Keeps the aspect ratio
-              width={1366} // original width
-              height={406} // original height
-              className="w-full" // Ensures it fills the width of its container
-            />
+              src={theme === 'dark' ? YKLogoDark : YKLogo} alt="YK-Intelligence" layout="intrinsic" width={1366} height={406} className="w-full" />
+
           </div>
 
-          <h1 className="text-md font-bold leading-tight tracking-tight text-gray-900 md:text-2xl mb-6">
+          <h1 className="text-xl font-bold text-secondary-foreground md:text-2xl mb-6">
             {'הזן קוד אימות שנשלח למייל'}
           </h1>
 
@@ -171,9 +172,9 @@ const AuthForm = () => {
       {/* Security Powered By - Floating Bottom Left */}
       <div className="absolute bottom-4 left-4 flex items-center space-x-2 text-gray-500 text-sm">
         <Link href="https://supabase.com/" target="_blank" rel="noopener noreferrer">
-          <Image src={SupabaseLogo} alt="Supabase" width={100} height={30} className="w-auto h-6 cursor-pointer" />
+          <Image src={theme === 'dark' ? SupabaseLogoDark : SupabaseLogo} alt="Supabase" width={100} height={30} className="w-auto h-6 cursor-pointer" />
         </Link>
-        <span className="font-bold pr-2">Security Powered By</span>
+        <span className="font-bold pr-2 text-secondary-foreground">Security Powered By</span>
       </div>
     </div>
 

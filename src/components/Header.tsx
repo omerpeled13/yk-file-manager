@@ -14,6 +14,7 @@ import { useTheme } from 'next-themes';
 
 export default function Header() {
     const { theme } = useTheme();
+
     const router = useRouter()
 
     const { user, loading: user_loading } = useAuth();
@@ -52,29 +53,19 @@ export default function Header() {
     };
 
 
+    if (!theme) return
 
     return (
         <header className="fixed top-0 left-0 right-0 bg-background border-b h-16 z-10">
             <div className="max-w-6xl mx-auto px-4 h-full flex justify-between items-center">
                 <Link href="/main" className="flex items-end gap-2">
-                    {theme === 'dark' ? (
-                        <Image
-                            src={YKLogoDark} // Path to image in the public folder
-                            alt="YK Logo"
-                            width={200} // Adjust width to fit the header
-                            height={60} // Adjust height to fit the header
-                            className="object-contain"
-                        />
-                    ) : (
-                        <Image
-                            src={YKLogo} // Path to image in the public folder
-                            alt="YK Logo"
-                            width={200} // Adjust width to fit the header
-                            height={60} // Adjust height to fit the header
-                            className="object-contain"
-                        />
-                    )}
-
+                    <Image
+                        src={theme === 'dark' ? YKLogoDark : YKLogo} // Path to image in the public folder
+                        alt="YK Logo"
+                        width={200} // Adjust width to fit the header
+                        height={60} // Adjust height to fit the header
+                        className="object-contain"
+                    />
                     {/* Text Below the Logo */}
                     <div>
                         <h1 className="text-sm text-secondary-foreground mb-[10px]">{'מערכת לניהול דו"חות'}</h1>
@@ -88,11 +79,11 @@ export default function Header() {
 
                             <Button variant="link" className="h-8 px-0">
                                 {user?.name && (
-                                    <span className="text-sm text-muted-foreground">
+                                    <span className="text-sm ">
                                         היי {user?.name}
                                     </span>
                                 )}
-                                <ChevronDownIcon className="w-4 h-4" />
+                                <ChevronDownIcon className="w-4 h-4 mr-1" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-48">

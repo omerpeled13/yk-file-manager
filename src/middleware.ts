@@ -12,7 +12,7 @@ export async function middleware(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const OTP_EXPIRATION_HOURS = 24; // Set expiration time
+  const OTP_EXPIRATION_HOURS = 1; // Set expiration time
 
   function isOtpValid(user: any) {
     const otpVerified = user?.user_metadata?.isOtpVerified;

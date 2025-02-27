@@ -106,7 +106,7 @@ export function ClientManagment() {
 
             <Dialog open={showAddClientDialog} onOpenChange={setShowAddClientDialog} >
                 <DialogContent >
-                    <DialogHeader>
+                    <DialogHeader className="flex flex-col space-y-1.5 items-center">
                         <DialogTitle>
                             הוספת לקוח
                         </DialogTitle>
